@@ -523,6 +523,8 @@ static void open_glut_window(void) {
     glutReshapeFunc(reshape_func);
     glutIdleFunc(idle_func);
     glutDisplayFunc(display_func);
+
+
 }
 
 

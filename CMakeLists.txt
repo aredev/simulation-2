@@ -50,8 +50,7 @@ set(SOURCE_FILES
         ParticleToy/AngularSpringForce.h
         ParticleToy/SetUp.cpp
         ParticleToy/SetUp.h
-        ParticleToy/Stam/solver.c
-        ParticleToy/Stam/demo.c)
+        ParticleToy/Stam/solver.cpp ParticleToy/Stam/solver.h ParticleToy/Stam/demo.cpp ParticleToy/Stam/demo.h)
 
 find_package (OpenGL REQUIRED)
 #find_package (GLUT REQUIRED)

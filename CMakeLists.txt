@@ -7,8 +7,9 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # Set Compile and Linker flags
 
-set(GCC_COVERAGE_COMPILE_FLAGS "-lfreeglut -lopengl32 -static-libgcc -lwinmm -lgdi32 -Wl,--subsystem,windows")
-set(GCC_COVERAGE_LINK_FLAGS    "-D FREEGLUT_STATIC")
+set(GCC_COVERAGE_COMPILE_FLAGS "-D FREEGLUT_STATIC")
+set(GCC_COVERAGE_LINK_FLAGS    "-static")
+
 
 set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}")
@@ -50,7 +51,7 @@ set(SOURCE_FILES
         ParticleToy/AngularSpringForce.h
         ParticleToy/SetUp.cpp
         ParticleToy/SetUp.h
-        ParticleToy/Stam/solver.cpp ParticleToy/Stam/solver.h ParticleToy/Stam/demo.cpp ParticleToy/Stam/demo.h)
+        ParticleToy/Stam/solver.cpp ParticleToy/Stam/solver.h ParticleToy/Stam/demo.cpp ParticleToy/Stam/demo.h ParticleToy/Stam/Cell.cpp ParticleToy/Stam/Cell.h)
 
 find_package (OpenGL REQUIRED)
 #find_package (GLUT REQUIRED)
@@ -61,7 +62,7 @@ include_directories(${OPENGL_INCLUDE_DIR} ParticleToy/include ParticleToy/includ
 
 add_executable(simulation_1 ${SOURCE_FILES})
 
-target_link_libraries(simulation_1 ${OPENGL_LIBRARIES} freeglut)
+target_link_libraries(simulation_1 ${OPENGL_LIBRARIES} freeglut_static glu32 opengl32 winmm gdi32)
 
 MESSAGE( STATUS "CMAKE_CURRENT_SOURCE_DIR: " ${CMAKE_CURRENT_SOURCE_DIR} )
 

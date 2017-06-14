@@ -19,6 +19,7 @@
 #include <GL/glut.h>
 #include <../include/gfx/vec2.h>
 #include "../Particle.h"
+#include "Cell.h"
 
 /* macros */
 
@@ -43,6 +44,8 @@ static int win_id;
 static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
+
+std::vector<Cell* > cells;
 
 
 /*
@@ -155,6 +158,10 @@ static void draw_density ( void )
             d01 = dens[IX(i,j+1)];
             d10 = dens[IX(i+1,j)];
             d11 = dens[IX(i+1,j+1)];
+
+//            printf("N is %d\n", N);
+            Particle p = Particle(Vec2f(4, 4), 1.0f);
+            p.draw();
 
             glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
             glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );

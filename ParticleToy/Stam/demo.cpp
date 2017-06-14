@@ -20,6 +20,10 @@
 #include <../include/gfx/vec2.h>
 #include "../Particle.h"
 #include "Cell.h"
+#include "../Force.h"
+#include "../ConstraintForce.h"
+#include "../GravityForce.h"
+#include "Marker.h"
 
 /* macros */
 
@@ -29,6 +33,16 @@
 
 extern void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff, float dt );
 extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc, float dt );
+extern void simulation_step(std::vector<Particle *> particles,
+                            std::vector<Force *> forces,
+                            std::vector<ConstraintForce *> constraints,
+                            float dtx,
+                            int integrationSchemeIndex);
+
+
+static void draw_particles();
+
+static void transform_to_markers();
 
 /* global variables */
 
@@ -45,7 +59,11 @@ static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
 
-std::vector<Cell* > cells;
+std::vector<Particle *> pVector;
+std::vector<Particle *> solidParticles;
+std::vector<Force *> forceVector;
+std::vector<ConstraintForce *> constraintForces;
+
 
 
 /*
@@ -71,6 +89,10 @@ static void clear_data ( void )
 
     for ( i=0 ; i<size ; i++ ) {
         u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = 0.0f;
+    }
+
+    for (auto& particle: pVector) {
+        particle->reset();
     }
 }
 
@@ -159,14 +181,10 @@ static void draw_density ( void )
             d10 = dens[IX(i+1,j)];
             d11 = dens[IX(i+1,j+1)];
 
-//            printf("N is %d\n", N);
-            Particle p = Particle(Vec2f(4, 4), 1.0f);
-            p.draw();
-
-            glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
-            glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
-            glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
-            glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
+//            glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
+//            glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
+//            glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
+//            glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
         }
     }
 
@@ -265,9 +283,33 @@ static void idle_func ( void )
     get_from_UI ( dens_prev, u_prev, v_prev );
     vel_step ( N, u, v, u_prev, v_prev, visc, dt );
     dens_step ( N, dens, dens_prev, u, v, diff, dt );
+    transform_to_markers();
+    simulation_step(pVector, forceVector, constraintForces, dt, 0);
 
     glutSetWindow ( win_id );
     glutPostRedisplay ();
+}
+
+static void transform_to_markers() {
+    pVector.clear();
+    int i, j;
+    float x, y, h, d00, d01, d10, d11;
+
+    h = 1.0f/N;
+
+    for ( i=0 ; i<=N ; i++ ) {
+        x = (i-0.5f)*h;
+        for ( j=0 ; j<=N ; j++ ) {
+            y = (j-0.5f)*h;
+
+            d00 = dens[IX(i,j)];
+            if (d00 > 0){
+                pVector.push_back(new Marker(Vec2f(x, y), 1.0f, d00, 0));
+            }
+        }
+    }
+
+    forceVector.push_back(new GravityForce(pVector));
 }
 
 static void display_func ( void )
@@ -277,7 +319,15 @@ static void display_func ( void )
     if ( dvel ) draw_velocity ();
     else		draw_density ();
 
+    draw_particles();
+
     post_display ();
+}
+
+static void draw_particles() {
+    for (auto &partice : pVector){
+        partice->draw();
+    }
 }
 
 /**
@@ -285,7 +335,20 @@ static void display_func ( void )
  */
 void draw_simple_solid_object() {
     Vec2f center = Vec2f(0.0, 0.0);
-    Particle p = Particle(center, 1.0f);
+    Vec2f offset = Vec2f(0.2, 0.0);
+    Particle* p = new Particle(center, 1.0f);
+    Particle* pright = new Particle(center+offset, 1.0f);
+    Particle* pbottom = new Particle(center+Vec2f(0.0, -0.2), 1.0f);
+    Particle* prightbottom = new Particle(center+Vec2f(0.2, -0.2), 1.0f);
+
+    solidParticles.push_back(p);
+    solidParticles.push_back(pright);
+    solidParticles.push_back(pbottom);
+    solidParticles.push_back(prightbottom);
+
+
+
+
 }
 
 
@@ -372,6 +435,12 @@ int main ( int argc, char ** argv )
 
     if ( !allocate_data () ) exit ( 1 );
     clear_data ();
+
+    //Init system
+    Particle* p = new Particle(Vec2f(0.5, 0.5), 1.0f);
+    pVector.push_back(p);
+    Force* gravity = new GravityForce(pVector);
+    forceVector.push_back(gravity);
 
     win_x = 512;
     win_y = 512;

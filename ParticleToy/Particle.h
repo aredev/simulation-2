@@ -11,7 +11,7 @@ public:
 
     void reset();
 
-    void draw();
+    virtual void draw();
 
     int row; //Used to know which row to place the particle in the J matrix
     Vec2f m_ConstructPos;
@@ -23,4 +23,6 @@ public:
     void drawForce();
 
     void drawVelocity();
+
+    void drawInitial();
 };

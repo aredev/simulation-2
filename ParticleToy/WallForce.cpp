@@ -12,6 +12,8 @@ void WallForce::computeForce() {
         p->m_Velocity -= Vec2f(p->m_Velocity[0] + 0.1f, 0.0);
         p->m_Force -= Vec2f(p->m_Force[0] + 0.1f, 0.0);
     }
+
+    //todo: add horizontal component for wall force
 }
 
 void WallForce::draw() {

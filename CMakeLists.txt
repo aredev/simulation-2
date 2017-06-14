@@ -21,7 +21,7 @@ set(SOURCE_FILES
         ParticleToy/linearSolver.h
         ParticleToy/Particle.cpp
         ParticleToy/Particle.h
-        ParticleToy/ParticleToy.cpp
+        #ParticleToy/ParticleToy.cpp
         ParticleToy/RodConstraint.cpp
         ParticleToy/RodConstraint.h
         ParticleToy/Solver.cpp
@@ -51,7 +51,7 @@ set(SOURCE_FILES
         ParticleToy/AngularSpringForce.h
         ParticleToy/SetUp.cpp
         ParticleToy/SetUp.h
-        ParticleToy/Stam/solver.cpp ParticleToy/Stam/solver.h ParticleToy/Stam/demo.cpp ParticleToy/Stam/demo.h ParticleToy/Stam/Cell.cpp ParticleToy/Stam/Cell.h)
+        ParticleToy/Stam/solver.cpp ParticleToy/Stam/solver.h ParticleToy/Stam/demo.cpp ParticleToy/Stam/demo.h ParticleToy/Stam/Cell.cpp ParticleToy/Stam/Cell.h ParticleToy/Stam/Marker.cpp ParticleToy/Stam/Marker.h)
 
 find_package (OpenGL REQUIRED)
 #find_package (GLUT REQUIRED)

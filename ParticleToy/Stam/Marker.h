@@ -14,6 +14,8 @@ public:
 
     Marker(const Vec2f &ConstructPos, double m, double density, double velocity);
 
+    Marker(const Vec2f &ConstructPos, double m, double density, Vec2f velocity);
+
     void draw() override;
 
     double density;

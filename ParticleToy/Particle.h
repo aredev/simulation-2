@@ -25,4 +25,6 @@ public:
     void drawVelocity();
 
     void drawInitial();
+
+    void drawDistance();
 };

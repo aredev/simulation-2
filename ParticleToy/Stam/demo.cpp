@@ -24,6 +24,7 @@
 #include "../ConstraintForce.h"
 #include "../GravityForce.h"
 #include "Marker.h"
+#include "../SolidFluidForce.h"
 
 /* macros */
 
@@ -31,8 +32,8 @@
 
 /* external definitions (from solver.c) */
 
-extern void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff, float dt );
-extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc, float dt );
+extern void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff, float dt, bool* b );
+extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc, float dt, bool* b );
 extern void simulation_step(std::vector<Particle *> particles,
                             std::vector<Force *> forces,
                             std::vector<ConstraintForce *> constraints,
@@ -44,6 +45,8 @@ static void draw_particles();
 
 static void transform_to_markers();
 
+static void draw_solid() ;
+
 /* global variables */
 
 static int N;
@@ -53,6 +56,8 @@ static int dvel;
 
 static float * u, * v, * u_prev, * v_prev;
 static float * dens, * dens_prev;
+static bool * b; //boundary
+static bool withBool = false;
 
 static int win_id;
 static int win_x, win_y;
@@ -60,6 +65,7 @@ static int mouse_down[3];
 static int omx, omy, mx, my;
 
 std::vector<Particle *> pVector;
+std::vector<Marker *> markers;
 std::vector<Particle *> solidParticles;
 std::vector<Force *> forceVector;
 std::vector<ConstraintForce *> constraintForces;
@@ -81,6 +87,7 @@ static void free_data ( void )
     if ( v_prev ) free ( v_prev );
     if ( dens ) free ( dens );
     if ( dens_prev ) free ( dens_prev );
+    if ( b ) free ( b );
 }
 
 static void clear_data ( void )
@@ -91,8 +98,9 @@ static void clear_data ( void )
         u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = 0.0f;
     }
 
-    for (auto& particle: pVector) {
+    for (auto& particle: solidParticles) {
         particle->reset();
+        forceVector.clear();
     }
 }
 
@@ -106,8 +114,9 @@ static int allocate_data ( void )
     v_prev		= (float *) malloc ( size*sizeof(float) );
     dens		= (float *) malloc ( size*sizeof(float) );
     dens_prev	= (float *) malloc ( size*sizeof(float) );
+    b	        = (bool *) malloc ( size*sizeof(bool) );
 
-    if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev ) {
+    if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev || !b) {
         fprintf ( stderr, "cannot allocate data\n" );
         return ( 0 );
     }
@@ -160,6 +169,36 @@ static void draw_velocity ( void )
     }
 
     glEnd ();
+}
+
+static void draw_boundary ( void ){
+    glColor3f ( 0.5f, 0.5, 0.5f );
+
+    glBegin ( GL_QUADS );
+
+    float x, y, h, d00, d01, d10, d11;
+    h = 1.0f/N;
+
+    for (int i = 0; i < N; ++i) {
+        x = (i-0.5f)*h;
+        for (int j = 0; j < N; ++j) {
+            y = (j-0.5f)*h;
+            if (b[IX(i,j)]){
+
+                d00 = b[IX(i,j)];
+                d01 = b[IX(i,j+1)];
+                d10 = b[IX(i+1,j)];
+                d11 = b[IX(i+1,j+1)];
+
+                glVertex2f ( x, y );
+                glVertex2f ( x+h, y );
+                glVertex2f ( x+h, y+h );
+                glVertex2f ( x, y+h );
+            }
+        }
+    }
+
+    glEnd();
 }
 
 static void draw_density ( void )
@@ -217,6 +256,10 @@ static void get_from_UI ( float * d, float * u, float * v )
         v[IX(i,j)] = force * (omy-my);
     }
 
+    if ( mouse_down[0] && withBool) {
+        b[IX(i,j)] = true;
+    }
+
     if ( mouse_down[2] ) {
         d[IX(i,j)] = source;
     }
@@ -237,6 +280,9 @@ static void key_func ( unsigned char key, int x, int y )
 {
     switch ( key )
     {
+        case 'b':
+        case 'B':
+            withBool = !withBool;
         case 'c':
         case 'C':
             clear_data ();
@@ -281,17 +327,18 @@ static void reshape_func ( int width, int height )
 static void idle_func ( void )
 {
     get_from_UI ( dens_prev, u_prev, v_prev );
-    vel_step ( N, u, v, u_prev, v_prev, visc, dt );
-    dens_step ( N, dens, dens_prev, u, v, diff, dt );
+    vel_step ( N, u, v, u_prev, v_prev, visc, dt, b );
+    dens_step ( N, dens, dens_prev, u, v, diff, dt, b );
+//    compute_solid_force(pVector, solidParticles);
     transform_to_markers();
-    simulation_step(pVector, forceVector, constraintForces, dt, 0);
+    simulation_step(solidParticles, forceVector, constraintForces, dt, 0);
 
     glutSetWindow ( win_id );
     glutPostRedisplay ();
 }
 
 static void transform_to_markers() {
-    pVector.clear();
+    markers.clear();
     int i, j;
     float x, y, h, d00, d01, d10, d11;
 
@@ -304,12 +351,11 @@ static void transform_to_markers() {
 
             d00 = dens[IX(i,j)];
             if (d00 > 0){
-                pVector.push_back(new Marker(Vec2f(x, y), 1.0f, d00, 0));
+                markers.push_back(new Marker(Vec2f(x, y), 1.0f, d00, Vec2f(u[IX(i,j)], v[IX(i,j)]) ));
             }
         }
     }
 
-    forceVector.push_back(new GravityForce(pVector));
 }
 
 static void display_func ( void )
@@ -320,13 +366,23 @@ static void display_func ( void )
     else		draw_density ();
 
     draw_particles();
+    draw_boundary();
+    draw_solid();
 
     post_display ();
 }
 
 static void draw_particles() {
-    for (auto &partice : pVector){
+    for (auto &partice : markers){
         partice->draw();
+    }
+}
+
+static void draw_solid() {
+    for (auto &solid : solidParticles){
+        solid->draw();
+        solid->drawForce();
+        solid->drawVelocity();
     }
 }
 
@@ -334,22 +390,25 @@ static void draw_particles() {
  * Draws 4 particles, interconnected using four springs.
  */
 void draw_simple_solid_object() {
-    Vec2f center = Vec2f(0.0, 0.0);
-    Vec2f offset = Vec2f(0.2, 0.0);
-    Particle* p = new Particle(center, 1.0f);
-    Particle* pright = new Particle(center+offset, 1.0f);
-    Particle* pbottom = new Particle(center+Vec2f(0.0, -0.2), 1.0f);
-    Particle* prightbottom = new Particle(center+Vec2f(0.2, -0.2), 1.0f);
+    float x, y, h;
 
+    h = 1.0f/N;
+    x = (N/2-0.5f)*h;
+    y = (N/2-0.5f)*h;
+
+    Vec2f center = Vec2f(x, y);
+    Vec2f offset = Vec2f(x/2, y/2);
+    Particle* p = new Particle(center, 1.0f);
+    Particle* pright = new Particle(center+Vec2f(0.2f, 0.2f), 1.0f);
+    Particle* pbottom = new Particle(center-Vec2f(0.3f, 0.3f), 1.0f);
+
+    solidParticles.push_back(pbottom);
     solidParticles.push_back(p);
     solidParticles.push_back(pright);
-    solidParticles.push_back(pbottom);
-    solidParticles.push_back(prightbottom);
 
-
-
-
+    forceVector.push_back(new SolidFluidForce(solidParticles, &markers, 0.5, 0.5, 0.5, u, v, dens));
 }
+
 
 
 /*
@@ -437,10 +496,8 @@ int main ( int argc, char ** argv )
     clear_data ();
 
     //Init system
-    Particle* p = new Particle(Vec2f(0.5, 0.5), 1.0f);
-    pVector.push_back(p);
-    Force* gravity = new GravityForce(pVector);
-    forceVector.push_back(gravity);
+    draw_simple_solid_object();
+
 
     win_x = 512;
     win_y = 512;

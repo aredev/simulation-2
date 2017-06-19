@@ -5,11 +5,11 @@
 #include <GL/gl.h>
 #include "Marker.h"
 
-Marker::Marker(const Vec2f &ConstructPos, double m, double density, double velocity) : Particle(ConstructPos, m) {
+Marker::Marker(const Vec2f &ConstructPos, double m, double density, Vec2f velocity) : Particle(ConstructPos, m) {
     this->m_ConstructPos = ConstructPos;
     this->mass = m;
     this->density = density;
-    this->velocity = velocity;
+    this->m_Velocity = velocity;
 }
 
 void Marker::draw() {

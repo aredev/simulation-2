@@ -19,15 +19,15 @@
 #include <GL/glut.h>
 #include <../include/gfx/vec2.h>
 #include "../Particle.h"
-#include "Cell.h"
 #include "../Force.h"
 #include "../ConstraintForce.h"
 #include "../GravityForce.h"
 #include "Marker.h"
+#include "RigidBody.h"
 
 /* macros */
 
-#define IX(i,j) ((i)+(N+2)*(j))
+#include "Macros.h"
 
 /* external definitions (from solver.c) */
 
@@ -52,7 +52,7 @@ static float force, source;
 static int dvel;
 
 static float * u, * v, * u_prev, * v_prev;
-static float * dens, * dens_prev;
+static float * dens, * dens_prev, * mass, *is_polygon_edge;
 
 static int win_id;
 static int win_x, win_y;
@@ -80,6 +80,8 @@ static void free_data ( void )
     if ( u_prev ) free ( u_prev );
     if ( v_prev ) free ( v_prev );
     if ( dens ) free ( dens );
+    if (mass ) free (mass);
+    if (is_polygon_edge) free (is_polygon_edge);
     if ( dens_prev ) free ( dens_prev );
 }
 
@@ -88,7 +90,7 @@ static void clear_data ( void )
     int i, size=(N+2)*(N+2);
 
     for ( i=0 ; i<size ; i++ ) {
-        u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = 0.0f;
+        u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = mass[i] = is_polygon_edge[i] = 0.0f;
     }
 
     for (auto& particle: pVector) {
@@ -320,7 +322,19 @@ static void display_func ( void )
     else		draw_density ();
 
     draw_particles();
-
+    // tmp
+    std::vector<float> mass = {1,1,1};
+    std::vector<VectorXd> constantBodyLocations, currentBodyLocations;
+    std::vector<float> masses;
+    VectorXd p1(2), p2(2), p3(2);
+    p1 << 0, 0;
+    p2 << -1, 0.5;
+    p3 << -1, -0.5;
+    constantBodyLocations = {p1, p2, p3};
+    currentBodyLocations = {p1, p2, p3};
+    masses = {1, 1, 1};
+//    RigidBody *r = new RigidBody(constantBodyLocations, currentBodyLocations, masses);
+//    r->calculateCenterOfMass();
     post_display ();
 }
 

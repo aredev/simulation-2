@@ -176,38 +176,6 @@ bool noCloseParticles(std::vector<Particle *> particles, Vec2f v, float threshol
 }
 
 
-/**
- * See https://gamedev.stackexchange.com/questions/32555/how-do-i-convert-between-two-different-2d-coordinate-systems
- * @param value The value to normalize
- * @param min The min value
- * @param max The max value
- * @return
- */
-float normalize(float value, float min, float max) {
-    return fabsf((value - min) / (max - min));
-}
-
-/**
- * Transforms x and y coordinates retrieved from a mouse click to the coordinate system used to draw points on the
- * screen.
- * @param x The x value of the mouse
- * @param y  The y value of the mouse
- * @return  Vec2f of transformed coordinates
- */
-Vec2f getTransformedCoordinates(int x, int y) {
-    float max = 1.0f;
-    float min = -1.0f;
-    float windowWidth = glutGet(GLUT_WINDOW_WIDTH);
-    float windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
-    // Normalize the x and y coordinates that indicate the mouse position
-    float xPercent = normalize(x, 0, windowWidth);
-    float yPercent = normalize(y, 0, windowHeight);
-    // Compute values in the new coordinate system
-    float destX = xPercent * fabsf(max - min) + min;
-    float destY = yPercent * fabsf(max - min) + min;
-    destY *= -1;
-    return Vec2f(destX, destY);
-}
 
 /**
  * Function for handling mouse input.

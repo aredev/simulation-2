@@ -42,8 +42,8 @@ MatrixXd CircularWireConstraint::getJ() {
 
 MatrixXd CircularWireConstraint::getW() {
     MatrixXd MatrixW(2, 2);
-    MatrixW(0, 0) = 1 / (m_p->mass);
-    MatrixW(1, 1) = 1 / (m_p->mass);
+    MatrixW(0, 0) = 1 / (m_p->m_Mass);
+    MatrixW(1, 1) = 1 / (m_p->m_Mass);
     return MatrixW;
 }
 

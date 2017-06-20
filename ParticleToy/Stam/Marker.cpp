@@ -7,7 +7,7 @@
 
 Marker::Marker(const Vec2f &ConstructPos, double m, double density, double velocity) : Particle(ConstructPos, m) {
     this->m_ConstructPos = ConstructPos;
-    this->mass = m;
+    this->m_Mass = m;
     this->density = density;
     this->velocity = velocity;
 }

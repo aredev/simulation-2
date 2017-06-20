@@ -3,7 +3,7 @@
 
 Particle::Particle(const Vec2f &ConstructPos, double m) :
         m_ConstructPos(ConstructPos), m_Position(ConstructPos), m_Velocity(Vec2f(0.0, 0.0)) {
-    this->mass = m;
+    this->m_Mass = m;
 }
 
 Particle::~Particle(void) {

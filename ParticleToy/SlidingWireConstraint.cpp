@@ -38,8 +38,8 @@ MatrixXd SlidingWireConstraint::getJ() {
 
 MatrixXd SlidingWireConstraint::getW() {
     MatrixXd MatrixW(2, 2);
-    MatrixW(0, 0) = 1 / (p1->mass);
-    MatrixW(1, 1) = 1 / (p1->mass);
+    MatrixW(0, 0) = 1 / (p1->m_Mass);
+    MatrixW(1, 1) = 1 / (p1->m_Mass);
     return MatrixW;
 }
 

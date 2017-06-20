@@ -4,11 +4,9 @@
 
 #include "RigidBody.h"
 #include "Macros.h"
-#include "../Particle.h"
+#include <Eigen/LU>
 
-
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
+using namespace Eigen;
 
 
 /**
@@ -21,34 +19,33 @@ using Eigen::VectorXd;
  */
 
 
-//
-
-
 RigidBody::RigidBody(float *is_polygon_edge, float *mass, float *v, int N) : Particle(Vec2f(0, 0), 1),
                                                                              m_is_polygon_edge(is_polygon_edge),
-                                                                             m_mass(mass), m_v(v),
+                                                                             m_v(v),
                                                                              N(N) {
-    m_R = MatrixXd::Zero(2, 2);
+    R = Matrix2f::Zero(2, 2);
     calculateCenterOfMass();
+    calculateIbody();
 }
-
 
 void RigidBody::calculateCenterOfMass() {
     float totalMass = 0;
-    MatrixXd massPositionSumation = MatrixXd::Zero(2, 1);
+    Vector2f massPositionSumation = Vector2f::Zero(2);
     int i, j;
     FOR_EACH_CELL
             if (m_is_polygon_edge[IX(i, j)]) {
                 float mass = m_mass[IX(i, j)];
                 totalMass += mass;
-                MatrixXd pos = MatrixXd::Zero(2, 1);
-                pos[0] = i - 1 / 2f * 1 / N;
-                pos[1] = j - 1 / 2f * 1 / N;
+                Vector2f pos = Vector2f::Zero(2);
+                pos(0) = i - 0.5f * 1 / N;
+                pos(1) = j - 0.5f * 1 / N;
                 massPositionSumation += mass * pos;
             }
     END_FOR
-    m_massOfBody = totalMass;
-    m_centerOfMass = totalMass * massPositionSumation;
+    m_Mass = totalMass;
+    x = totalMass * massPositionSumation;
+    m_Position[0] = x(0);
+    m_Position[1] = x(1);
 }
 
 /**
@@ -63,10 +60,10 @@ void RigidBody::calculateTorque() {
             if (m_is_polygon_edge[IX(i, j)]) {
                 float mass = m_mass[IX(i, j)];
                 MatrixXd pos = MatrixXd::Zero(2, 1);
-                pos[0] = i - 1 / 2f * 1 / N;
-                pos[1] = j - 1 / 2f * 1 / N;
-                float interia2D = mass * (pos[0] * pos[0] + pos[1] * pos[1]);
-                // TODO we need the angular velocity. It can be calculated as follows: omega = I^(-1) * L
+                pos(0) = i - 0.5f * 1 / N;
+                pos(1) = j - 0.5f * 1 / N;
+                float interia2D = mass * (pos(0) * pos(0) + pos(1) * pos(1));
+
             }
     END_FOR
 //    for (float individualMass : m_bodyMasses) {
@@ -75,7 +72,6 @@ void RigidBody::calculateTorque() {
 //    }
 }
 
-// TODO look at the paper and the provided c++ code
 
 void RigidBody::calculateLinearMomentum() {
     int i, j;
@@ -87,7 +83,46 @@ void RigidBody::calculateLinearMomentum() {
                 linearMomentum += mass * veloc;
             }
     END_FOR
-    m_P = linearMomentum;
+    m_Force = linearMomentum;
 }
 
+void RigidBody::calculateIinverse() {
+    Iinv = R * Ibodyinv * R.transpose();
+}
+
+void RigidBody::calculateV() {
+    m_Velocity = m_Force / m_Mass;
+}
+
+void RigidBody::calculateOmega() {
+    omega = Iinv * L;
+}
+
+void RigidBody::calculateIbody() {
+    Matrix2f I, tmp;
+    int i, j;
+    Ibody = Matrix2f::Zero(2, 2);
+    I = Matrix2f::Identity();
+    Vector2f centerOfMassPos(2);
+    FOR_EACH_CELL
+            Vector2f pos = Vector2f::Zero(2);
+            pos(0) = i - 0.5f * 1 / N;
+            pos(1) = j - 0.5f * 1 / N;
+            Vector2f r0 = pos - centerOfMassPos;
+            float mass = m_mass[IX(i, j)];
+            tmp = ((r0.transpose() * r0) * I - r0 * r0.transpose());
+            tmp *= mass;
+            Ibody += tmp;
+    END_FOR
+    Ibodyinv = Ibody.inverse();
+}
+
+/**
+ * Compute auxiliary variables
+ */
+void RigidBody::calculateAuxiliaries() {
+    calculateV();
+    calculateIinverse();
+    calculateOmega();
+}
 

@@ -29,10 +29,14 @@
 
 #include "Macros.h"
 
+using namespace Eigen;
+
 /* external definitions (from solver.c) */
 
-extern void dens_step ( int N, float * x, float * x0, float * u, float * v, float diff, float dt );
-extern void vel_step ( int N, float * u, float * v, float * u0, float * v0, float visc, float dt );
+extern void dens_step(int N, float *x, float *x0, float *u, float *v, float diff, float dt);
+
+extern void vel_step(int N, float *u, float *v, float *u0, float *v0, float visc, float dt);
+
 extern void simulation_step(std::vector<Particle *> particles,
                             std::vector<Force *> forces,
                             std::vector<ConstraintForce *> constraints,
@@ -51,8 +55,8 @@ static float dt, diff, visc;
 static float force, source;
 static int dvel;
 
-static float * u, * v, * u_prev, * v_prev;
-static float * dens, * dens_prev, * mass, *is_polygon_edge;
+static float *u, *v, *u_prev, *v_prev;
+static float *dens, *dens_prev, *mass, *is_polygon_edge;
 
 static int win_id;
 static int win_x, win_y;
@@ -65,7 +69,6 @@ std::vector<Force *> forceVector;
 std::vector<ConstraintForce *> constraintForces;
 
 
-
 /*
   ----------------------------------------------------------------------
    free/clear/allocate simulation data
@@ -73,48 +76,47 @@ std::vector<ConstraintForce *> constraintForces;
 */
 
 
-static void free_data ( void )
-{
-    if ( u ) free ( u );
-    if ( v ) free ( v );
-    if ( u_prev ) free ( u_prev );
-    if ( v_prev ) free ( v_prev );
-    if ( dens ) free ( dens );
-    if (mass ) free (mass);
-    if (is_polygon_edge) free (is_polygon_edge);
-    if ( dens_prev ) free ( dens_prev );
+static void free_data(void) {
+    if (u) free(u);
+    if (v) free(v);
+    if (u_prev) free(u_prev);
+    if (v_prev) free(v_prev);
+    if (dens) free(dens);
+    if (mass) free(mass);
+    if (is_polygon_edge) free(is_polygon_edge);
+    if (dens_prev) free(dens_prev);
 }
 
-static void clear_data ( void )
-{
-    int i, size=(N+2)*(N+2);
+static void clear_data(void) {
+    int i, size = (N + 2) * (N + 2);
 
-    for ( i=0 ; i<size ; i++ ) {
+    for (i = 0; i < size; i++) {
         u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = mass[i] = is_polygon_edge[i] = 0.0f;
     }
 
-    for (auto& particle: pVector) {
+    for (auto &particle: pVector) {
         particle->reset();
     }
 }
 
-static int allocate_data ( void )
-{
-    int size = (N+2)*(N+2);
+static int allocate_data(void) {
+    int size = (N + 2) * (N + 2);
 
-    u			= (float *) malloc ( size*sizeof(float) );
-    v			= (float *) malloc ( size*sizeof(float) );
-    u_prev		= (float *) malloc ( size*sizeof(float) );
-    v_prev		= (float *) malloc ( size*sizeof(float) );
-    dens		= (float *) malloc ( size*sizeof(float) );
-    dens_prev	= (float *) malloc ( size*sizeof(float) );
+    u = (float *) malloc(size * sizeof(float));
+    v = (float *) malloc(size * sizeof(float));
+    u_prev = (float *) malloc(size * sizeof(float));
+    v_prev = (float *) malloc(size * sizeof(float));
+    dens = (float *) malloc(size * sizeof(float));
+    dens_prev = (float *) malloc(size * sizeof(float));
+    mass = (float *) malloc(size * sizeof(float));
+    is_polygon_edge = (float *) malloc(size * sizeof(float));
 
-    if ( !u || !v || !u_prev || !v_prev || !dens || !dens_prev ) {
-        fprintf ( stderr, "cannot allocate data\n" );
-        return ( 0 );
+    if (!u || !v || !u_prev || !v_prev || !dens || !dens_prev) {
+        fprintf(stderr, "cannot allocate data\n");
+        return (0);
     }
 
-    return ( 1 );
+    return (1);
 }
 
 
@@ -124,64 +126,60 @@ static int allocate_data ( void )
   ----------------------------------------------------------------------
 */
 
-static void pre_display ( void )
-{
-    glViewport ( 0, 0, win_x, win_y );
-    glMatrixMode ( GL_PROJECTION );
-    glLoadIdentity ();
-    gluOrtho2D ( 0.0, 1.0, 0.0, 1.0 );
-    glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
-    glClear ( GL_COLOR_BUFFER_BIT );
+static void pre_display(void) {
+    glViewport(0, 0, win_x, win_y);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0.0, 1.0, 0.0, 1.0);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static void post_display ( void )
-{
-    glutSwapBuffers ();
+static void post_display(void) {
+    glutSwapBuffers();
 }
 
-static void draw_velocity ( void )
-{
+static void draw_velocity(void) {
     int i, j;
     float x, y, h;
 
-    h = 1.0f/N;
+    h = 1.0f / N;
 
-    glColor3f ( 1.0f, 1.0f, 1.0f );
-    glLineWidth ( 1.0f );
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glLineWidth(1.0f);
 
-    glBegin ( GL_LINES );
+    glBegin(GL_LINES);
 
-    for ( i=1 ; i<=N ; i++ ) {
-        x = (i-0.5f)*h;
-        for ( j=1 ; j<=N ; j++ ) {
-            y = (j-0.5f)*h;
+    for (i = 1; i <= N; i++) {
+        x = (i - 0.5f) * h;
+        for (j = 1; j <= N; j++) {
+            y = (j - 0.5f) * h;
 
-            glVertex2f ( x, y );
-            glVertex2f ( x+u[IX(i,j)], y+v[IX(i,j)] );
+            glVertex2f(x, y);
+            glVertex2f(x + u[IX(i, j)], y + v[IX(i, j)]);
         }
     }
 
-    glEnd ();
+    glEnd();
 }
 
-static void draw_density ( void )
-{
+static void draw_density(void) {
     int i, j;
     float x, y, h, d00, d01, d10, d11;
 
-    h = 1.0f/N;
+    h = 1.0f / N;
 
-    glBegin ( GL_QUADS );
+    glBegin(GL_QUADS);
 
-    for ( i=0 ; i<=N ; i++ ) {
-        x = (i-0.5f)*h;
-        for ( j=0 ; j<=N ; j++ ) {
-            y = (j-0.5f)*h;
+    for (i = 0; i <= N; i++) {
+        x = (i - 0.5f) * h;
+        for (j = 0; j <= N; j++) {
+            y = (j - 0.5f) * h;
 
-            d00 = dens[IX(i,j)];
-            d01 = dens[IX(i,j+1)];
-            d10 = dens[IX(i+1,j)];
-            d11 = dens[IX(i+1,j+1)];
+            d00 = dens[IX(i, j)];
+            d01 = dens[IX(i, j + 1)];
+            d10 = dens[IX(i + 1, j)];
+            d11 = dens[IX(i + 1, j + 1)];
 
 //            glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
 //            glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
@@ -190,7 +188,7 @@ static void draw_density ( void )
         }
     }
 
-    glEnd ();
+    glEnd();
 }
 
 /*
@@ -199,28 +197,27 @@ static void draw_density ( void )
   ----------------------------------------------------------------------
 */
 
-static void get_from_UI ( float * d, float * u, float * v )
-{
-    int i, j, size = (N+2)*(N+2);
+static void get_from_UI(float *d, float *u, float *v) {
+    int i, j, size = (N + 2) * (N + 2);
 
-    for ( i=0 ; i<size ; i++ ) {
+    for (i = 0; i < size; i++) {
         u[i] = v[i] = d[i] = 0.0f;
     }
 
-    if ( !mouse_down[0] && !mouse_down[2] ) return;
+    if (!mouse_down[0] && !mouse_down[2]) return;
 
-    i = (int)((       mx /(float)win_x)*N+1);
-    j = (int)(((win_y-my)/(float)win_y)*N+1);
+    i = (int) ((mx / (float) win_x) * N + 1);
+    j = (int) (((win_y - my) / (float) win_y) * N + 1);
 
-    if ( i<1 || i>N || j<1 || j>N ) return;
+    if (i < 1 || i > N || j < 1 || j > N) return;
 
-    if ( mouse_down[0] ) {
-        u[IX(i,j)] = force * (mx-omx);
-        v[IX(i,j)] = force * (omy-my);
+    if (mouse_down[0]) {
+        u[IX(i, j)] = force * (mx - omx);
+        v[IX(i, j)] = force * (omy - my);
     }
 
-    if ( mouse_down[2] ) {
-        d[IX(i,j)] = source;
+    if (mouse_down[2]) {
+        d[IX(i, j)] = source;
     }
 
     omx = mx;
@@ -235,19 +232,17 @@ static void get_from_UI ( float * d, float * u, float * v )
   ----------------------------------------------------------------------
 */
 
-static void key_func ( unsigned char key, int x, int y )
-{
-    switch ( key )
-    {
+static void key_func(unsigned char key, int x, int y) {
+    switch (key) {
         case 'c':
         case 'C':
-            clear_data ();
+            clear_data();
             break;
 
         case 'q':
         case 'Q':
-            free_data ();
-            exit ( 0 );
+            free_data();
+            exit(0);
             break;
 
         case 'v':
@@ -257,39 +252,35 @@ static void key_func ( unsigned char key, int x, int y )
     }
 }
 
-static void mouse_func ( int button, int state, int x, int y )
-{
+static void mouse_func(int button, int state, int x, int y) {
     omx = mx = x;
     omx = my = y;
 
     mouse_down[button] = state == GLUT_DOWN;
 }
 
-static void motion_func ( int x, int y )
-{
+static void motion_func(int x, int y) {
     mx = x;
     my = y;
 }
 
-static void reshape_func ( int width, int height )
-{
-    glutSetWindow ( win_id );
-    glutReshapeWindow ( width, height );
+static void reshape_func(int width, int height) {
+    glutSetWindow(win_id);
+    glutReshapeWindow(width, height);
 
     win_x = width;
     win_y = height;
 }
 
-static void idle_func ( void )
-{
-    get_from_UI ( dens_prev, u_prev, v_prev );
-    vel_step ( N, u, v, u_prev, v_prev, visc, dt );
-    dens_step ( N, dens, dens_prev, u, v, diff, dt );
+static void idle_func(void) {
+    get_from_UI(dens_prev, u_prev, v_prev);
+    vel_step(N, u, v, u_prev, v_prev, visc, dt);
+    dens_step(N, dens, dens_prev, u, v, diff, dt);
     transform_to_markers();
     simulation_step(pVector, forceVector, constraintForces, dt, 0);
 
-    glutSetWindow ( win_id );
-    glutPostRedisplay ();
+    glutSetWindow(win_id);
+    glutPostRedisplay();
 }
 
 static void transform_to_markers() {
@@ -297,15 +288,15 @@ static void transform_to_markers() {
     int i, j;
     float x, y, h, d00, d01, d10, d11;
 
-    h = 1.0f/N;
+    h = 1.0f / N;
 
-    for ( i=0 ; i<=N ; i++ ) {
-        x = (i-0.5f)*h;
-        for ( j=0 ; j<=N ; j++ ) {
-            y = (j-0.5f)*h;
+    for (i = 0; i <= N; i++) {
+        x = (i - 0.5f) * h;
+        for (j = 0; j <= N; j++) {
+            y = (j - 0.5f) * h;
 
-            d00 = dens[IX(i,j)];
-            if (d00 > 0){
+            d00 = dens[IX(i, j)];
+            if (d00 > 0) {
                 pVector.push_back(new Marker(Vec2f(x, y), 1.0f, d00, 0));
             }
         }
@@ -314,32 +305,18 @@ static void transform_to_markers() {
     forceVector.push_back(new GravityForce(pVector));
 }
 
-static void display_func ( void )
-{
-    pre_display ();
+static void display_func(void) {
+    pre_display();
 
-    if ( dvel ) draw_velocity ();
-    else		draw_density ();
+    if (dvel) draw_velocity();
+    else draw_density();
 
     draw_particles();
-    // tmp
-    std::vector<float> mass = {1,1,1};
-    std::vector<VectorXd> constantBodyLocations, currentBodyLocations;
-    std::vector<float> masses;
-    VectorXd p1(2), p2(2), p3(2);
-    p1 << 0, 0;
-    p2 << -1, 0.5;
-    p3 << -1, -0.5;
-    constantBodyLocations = {p1, p2, p3};
-    currentBodyLocations = {p1, p2, p3};
-    masses = {1, 1, 1};
-//    RigidBody *r = new RigidBody(constantBodyLocations, currentBodyLocations, masses);
-//    r->calculateCenterOfMass();
-    post_display ();
+    post_display();
 }
 
 static void draw_particles() {
-    for (auto &partice : pVector){
+    for (auto &partice : pVector) {
         partice->draw();
     }
 }
@@ -350,19 +327,15 @@ static void draw_particles() {
 void draw_simple_solid_object() {
     Vec2f center = Vec2f(0.0, 0.0);
     Vec2f offset = Vec2f(0.2, 0.0);
-    Particle* p = new Particle(center, 1.0f);
-    Particle* pright = new Particle(center+offset, 1.0f);
-    Particle* pbottom = new Particle(center+Vec2f(0.0, -0.2), 1.0f);
-    Particle* prightbottom = new Particle(center+Vec2f(0.2, -0.2), 1.0f);
+    Particle *p = new Particle(center, 1.0f);
+    Particle *pright = new Particle(center + offset, 1.0f);
+    Particle *pbottom = new Particle(center + Vec2f(0.0, -0.2), 1.0f);
+    Particle *prightbottom = new Particle(center + Vec2f(0.2, -0.2), 1.0f);
 
     solidParticles.push_back(p);
     solidParticles.push_back(pright);
     solidParticles.push_back(pbottom);
     solidParticles.push_back(prightbottom);
-
-
-
-
 }
 
 
@@ -372,28 +345,27 @@ void draw_simple_solid_object() {
   ----------------------------------------------------------------------
 */
 
-static void open_glut_window ( void )
-{
-    glutInitDisplayMode ( GLUT_RGBA | GLUT_DOUBLE );
+static void open_glut_window(void) {
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 
-    glutInitWindowPosition ( 0, 0 );
-    glutInitWindowSize ( win_x, win_y );
-    win_id = glutCreateWindow ( "Alias | wavefront" );
+    glutInitWindowPosition(0, 0);
+    glutInitWindowSize(win_x, win_y);
+    win_id = glutCreateWindow("Alias | wavefront");
 
-    glClearColor ( 0.0f, 0.0f, 0.0f, 1.0f );
-    glClear ( GL_COLOR_BUFFER_BIT );
-    glutSwapBuffers ();
-    glClear ( GL_COLOR_BUFFER_BIT );
-    glutSwapBuffers ();
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glutSwapBuffers();
+    glClear(GL_COLOR_BUFFER_BIT);
+    glutSwapBuffers();
 
-    pre_display ();
+    pre_display();
 
-    glutKeyboardFunc ( key_func );
-    glutMouseFunc ( mouse_func );
-    glutMotionFunc ( motion_func );
-    glutReshapeFunc ( reshape_func );
-    glutIdleFunc ( idle_func );
-    glutDisplayFunc ( display_func );
+    glutKeyboardFunc(key_func);
+    glutMouseFunc(mouse_func);
+    glutMotionFunc(motion_func);
+    glutReshapeFunc(reshape_func);
+    glutIdleFunc(idle_func);
+    glutDisplayFunc(display_func);
 
 }
 
@@ -404,31 +376,30 @@ static void open_glut_window ( void )
   ----------------------------------------------------------------------
 */
 
-int main ( int argc, char ** argv )
-{
-    glutInit ( &argc, argv );
+int main(int argc, char **argv) {
+    glutInit(&argc, argv);
 
-    if ( argc != 1 && argc != 6 ) {
-        fprintf ( stderr, "usage : %s N dt diff visc force source\n", argv[0] );
-        fprintf ( stderr, "where:\n" );\
-		fprintf ( stderr, "\t N      : grid resolution\n" );
-        fprintf ( stderr, "\t dt     : time step\n" );
-        fprintf ( stderr, "\t diff   : diffusion rate of the density\n" );
-        fprintf ( stderr, "\t visc   : viscosity of the fluid\n" );
-        fprintf ( stderr, "\t force  : scales the mouse movement that generate a force\n" );
-        fprintf ( stderr, "\t source : amount of density that will be deposited\n" );
-        exit ( 1 );
+    if (argc != 1 && argc != 6) {
+        fprintf(stderr, "usage : %s N dt diff visc force source\n", argv[0]);
+        fprintf(stderr, "where:\n");\
+        fprintf(stderr, "\t N      : grid resolution\n");
+        fprintf(stderr, "\t dt     : time step\n");
+        fprintf(stderr, "\t diff   : diffusion rate of the density\n");
+        fprintf(stderr, "\t visc   : viscosity of the fluid\n");
+        fprintf(stderr, "\t force  : scales the mouse movement that generate a force\n");
+        fprintf(stderr, "\t source : amount of density that will be deposited\n");
+        exit(1);
     }
 
-    if ( argc == 1 ) {
+    if (argc == 1) {
         N = 64;
         dt = 0.1f;
         diff = 0.0f;
         visc = 0.0f;
         force = 5.0f;
         source = 100.0f;
-        fprintf ( stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g\n",
-                  N, dt, diff, visc, force, source );
+        fprintf(stderr, "Using defaults : N=%d dt=%g diff=%g visc=%g force = %g source=%g\n",
+                N, dt, diff, visc, force, source);
     } else {
         N = atoi(argv[1]);
         dt = atof(argv[2]);
@@ -438,29 +409,29 @@ int main ( int argc, char ** argv )
         source = atof(argv[6]);
     }
 
-    printf ( "\n\nHow to use this demo:\n\n" );
-    printf ( "\t Add densities with the right mouse button\n" );
-    printf ( "\t Add velocities with the left mouse button and dragging the mouse\n" );
-    printf ( "\t Toggle density/velocity display with the 'v' key\n" );
-    printf ( "\t Clear the simulation by pressing the 'c' key\n" );
-    printf ( "\t Quit by pressing the 'q' key\n" );
+    printf("\n\nHow to use this demo:\n\n");
+    printf("\t Add densities with the right mouse button\n");
+    printf("\t Add velocities with the left mouse button and dragging the mouse\n");
+    printf("\t Toggle density/velocity display with the 'v' key\n");
+    printf("\t Clear the simulation by pressing the 'c' key\n");
+    printf("\t Quit by pressing the 'q' key\n");
 
     dvel = 0;
 
-    if ( !allocate_data () ) exit ( 1 );
-    clear_data ();
+    if (!allocate_data()) exit(1);
+    clear_data();
 
     //Init system
-    Particle* p = new Particle(Vec2f(0.5, 0.5), 1.0f);
+    Particle *p = new Particle(Vec2f(0.5, 0.5), 1.0f);
     pVector.push_back(p);
-    Force* gravity = new GravityForce(pVector);
+    Force *gravity = new GravityForce(pVector);
     forceVector.push_back(gravity);
 
     win_x = 512;
     win_y = 512;
-    open_glut_window ();
+    open_glut_window();
 
-    glutMainLoop ();
+    glutMainLoop();
 
-    exit ( 0 );
+    exit(0);
 }

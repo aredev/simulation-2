@@ -64,10 +64,10 @@ MatrixXd RodConstraint::getJ() {
 
 MatrixXd RodConstraint::getW() {
     MatrixXd MatrixW(4, 4);
-    MatrixW(0, 0) = 1 / (particles[0]->mass);
-    MatrixW(1, 1) = 1 / (particles[0]->mass);
-    MatrixW(2, 2) = 1 / (particles[1]->mass);
-    MatrixW(3, 3) = 1 / (particles[1]->mass);
+    MatrixW(0, 0) = 1 / (particles[0]->m_Mass);
+    MatrixW(1, 1) = 1 / (particles[0]->m_Mass);
+    MatrixW(2, 2) = 1 / (particles[1]->m_Mass);
+    MatrixW(3, 3) = 1 / (particles[1]->m_Mass);
     return MatrixW;
 }
 

@@ -14,20 +14,19 @@ class SolidFluidForce : public Force {
 public:
     SolidFluidForce();
 
+    SolidFluidForce(std::vector<Particle *> solids, Vec2f (&F_marks)[64*64], float * u, float * v, float* dens);
 
-    SolidFluidForce(std::vector<Particle *> solids, std::vector<Marker *> *markers, float kint, float zint, float dint,
-                        float *u, float *v, float *dens);
+
+    SolidFluidForce(std::vector<Particle *> solids, float *u, float *v, float *u_add, float *v_add, float *dens);
 
     void computeForce() override;
 
     std::vector<Particle *> particles;
-    std::vector<Marker *>* markers;
-    float zint;
-    float kint;
-    float dint;
 
     float *u;
     float *v;
+    float *u_add;
+    float *v_add;
     float* dens;
 };
 

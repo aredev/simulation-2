@@ -25,6 +25,7 @@
 #include "../GravityForce.h"
 #include "Marker.h"
 #include "../SolidFluidForce.h"
+#include "../SpringForce.h"
 
 /* macros */
 
@@ -40,12 +41,15 @@ extern void simulation_step(std::vector<Particle *> particles,
                             float dtx,
                             int integrationSchemeIndex);
 
-
 static void draw_particles();
 
 static void transform_to_markers();
 
 static void draw_solid() ;
+
+static void draw_forces(void);
+
+static void find_particle_at(int x, int y);
 
 /* global variables */
 
@@ -58,11 +62,14 @@ static float * u, * v, * u_prev, * v_prev;
 static float * dens, * dens_prev;
 static bool * b; //boundary
 static bool withBool = false;
+static bool particleDraggable = false;
 
 static int win_id;
 static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
+
+static Vec2f F_marks[64*64] = { Vec2f(0.0f, 0.0f) }; //2D array to hold the force on the marker per (i, j)
 
 std::vector<Particle *> pVector;
 std::vector<Marker *> markers;
@@ -220,10 +227,10 @@ static void draw_density ( void )
             d10 = dens[IX(i+1,j)];
             d11 = dens[IX(i+1,j+1)];
 
-//            glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
-//            glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
-//            glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
-//            glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
+            glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
+            glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
+            glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
+            glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
         }
     }
 
@@ -235,6 +242,15 @@ static void draw_density ( void )
    relates mouse movements to forces sources
   ----------------------------------------------------------------------
 */
+
+float euclideanDistance(Vec2f a, Vec2f b) {
+    return sqrtf(powf(a[0] - b[0], 2) + powf(a[1] - b[1], 2));
+}
+
+bool isWithinProximity(Vec2f a, Vec2f b, float threshold) {
+    float dist = euclideanDistance(a, b);
+    return dist <= threshold;
+}
 
 static void get_from_UI ( float * d, float * u, float * v )
 {
@@ -251,7 +267,7 @@ static void get_from_UI ( float * d, float * u, float * v )
 
     if ( i<1 || i>N || j<1 || j>N ) return;
 
-    if ( mouse_down[0] ) {
+    if ( mouse_down[0] && !particleDraggable ) {
         u[IX(i,j)] = force * (mx-omx);
         v[IX(i,j)] = force * (omy-my);
     }
@@ -283,11 +299,16 @@ static void key_func ( unsigned char key, int x, int y )
         case 'b':
         case 'B':
             withBool = !withBool;
+            break;
         case 'c':
         case 'C':
             clear_data ();
             break;
-
+        case 'd':
+        case 'D':
+            particleDraggable = !particleDraggable;
+            printf("Particle draggable %d \n", particleDraggable);
+            break;
         case 'q':
         case 'Q':
             free_data ();
@@ -301,18 +322,62 @@ static void key_func ( unsigned char key, int x, int y )
     }
 }
 
-static void mouse_func ( int button, int state, int x, int y )
+/**
+ * See https://gamedev.stackexchange.com/questions/32555/how-do-i-convert-between-two-different-2d-coordinate-systems
+ * @param value The value to normalize
+ * @param min The min value
+ * @param max The max value
+ * @return
+ */
+float normalize(float value, float min, float max) {
+    return fabsf((value - min) / (max - min));
+}
+
+Vec2f getTransformedCoordinates(int x, int y) {
+    float max = 1.0f;
+    float min = 0.0f;
+    float windowWidth = glutGet(GLUT_WINDOW_WIDTH);
+    float windowHeight = glutGet(GLUT_WINDOW_HEIGHT);
+    // Normalize the x and y coordinates that indicate the mouse position
+    float xPercent = normalize(x, 0, windowWidth);
+    float yPercent = normalize(y, 0, windowHeight);
+    // Compute values in the new coordinate system
+    float destX = xPercent * fabsf(max - min) + min;
+    float destY = yPercent * fabsf(max - min) + min;
+    return Vec2f(destX, destY);
+}
+
+static Particle* find_particle_at(float x, float y) {
+    for(auto &particle : solidParticles){
+        if (isWithinProximity(Vec2f(x,y), particle->m_Position, 0.15f)){
+            return particle;
+        }
+    }
+}
+
+static void mouse_func (int button, int state, int x, int y )
 {
     omx = mx = x;
     omx = my = y;
 
     mouse_down[button] = state == GLUT_DOWN;
+
 }
+
+
 
 static void motion_func ( int x, int y )
 {
     mx = x;
     my = y;
+
+    if (particleDraggable) {
+        Vec2f normalizedMouse = getTransformedCoordinates(x, y);
+        Particle* p = find_particle_at(normalizedMouse[0], normalizedMouse[1]);
+        p->m_Position = normalizedMouse;
+        p->setColour(0.5f);
+    }
+
 }
 
 static void reshape_func ( int width, int height )
@@ -327,11 +392,11 @@ static void reshape_func ( int width, int height )
 static void idle_func ( void )
 {
     get_from_UI ( dens_prev, u_prev, v_prev );
+//    transform_to_markers();
+    simulation_step(solidParticles, forceVector, constraintForces, dt, 0);
+    //u_prev, v_prev are the added sources.
     vel_step ( N, u, v, u_prev, v_prev, visc, dt, b );
     dens_step ( N, dens, dens_prev, u, v, diff, dt, b );
-//    compute_solid_force(pVector, solidParticles);
-    transform_to_markers();
-    simulation_step(solidParticles, forceVector, constraintForces, dt, 0);
 
     glutSetWindow ( win_id );
     glutPostRedisplay ();
@@ -368,6 +433,7 @@ static void display_func ( void )
     draw_particles();
     draw_boundary();
     draw_solid();
+    draw_forces();
 
     post_display ();
 }
@@ -375,6 +441,12 @@ static void display_func ( void )
 static void draw_particles() {
     for (auto &partice : markers){
         partice->draw();
+    }
+}
+
+static void draw_forces(void){
+    for (auto &force : forceVector){
+        force->draw();
     }
 }
 
@@ -406,7 +478,12 @@ void draw_simple_solid_object() {
     solidParticles.push_back(p);
     solidParticles.push_back(pright);
 
-    forceVector.push_back(new SolidFluidForce(solidParticles, &markers, 0.5, 0.5, 0.5, u, v, dens));
+    forceVector.push_back(new SpringForce(pbottom, p, 0.2, 0.1, 0.1));
+    forceVector.push_back(new SpringForce(p, pright, 0.2, 0.1, 0.1));
+
+    forceVector.push_back(new SolidFluidForce(solidParticles, u, v, u_prev, v_prev, dens));
+
+//    forceVector.push_back(new GravityForce(solidParticles));
 }
 
 
@@ -485,6 +562,7 @@ int main ( int argc, char ** argv )
 
     printf ( "\n\nHow to use this demo:\n\n" );
     printf ( "\t Add densities with the right mouse button\n" );
+    printf ( "\t Toggle draw boundary mode by pressing 'b' key\n");
     printf ( "\t Add velocities with the left mouse button and dragging the mouse\n" );
     printf ( "\t Toggle density/velocity display with the 'v' key\n" );
     printf ( "\t Clear the simulation by pressing the 'c' key\n" );

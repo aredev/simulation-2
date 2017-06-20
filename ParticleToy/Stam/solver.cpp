@@ -47,29 +47,6 @@ void set_bnd ( int N, int b, float * x, bool * boundary )
     x[IX(N+1,N+1)] = 0.5f*(x[IX(N,N+1)]+x[IX(N+1,N)]);
 }
 
-void compute_solid_force ( std::vector<Particle *> markers, std::vector<Particle *> solids ) {
-    float kint = 0.5;
-    float dint = 0.5;
-    float zint = 0.5;
-    Vec2f R = Vec2f(0.2, 0.2);
-
-    for (auto& solid: solids){
-        Vec2f fElem = Vec2f(0, 0);
-        for (auto& marker : markers) {
-//            double xDiff = sqrt( pow(marker->m_Position[0] - solid->m_Position[0], 2) + pow(marker->m_Position[1] - solid->m_Position[1], 2) );
-//            printf("Distance x  %d\n", xDiff);
-            Vec2f xDiff = marker->m_Position - solid->m_Position;
-            if (xDiff[0] <= 1.0 || xDiff[1] <= 1.0){
-                Vec2f distance = marker->m_Position - solid->m_Position;
-                fElem = (-1 * kint) * ( distance - Vec2f(dint, dint) )
-                              - (Vec2f(zint, zint) * ( marker->m_Velocity * distance ) );
-                printf("Force %f %f \n", fElem[0], fElem[1]);
-            }
-        }
-        solid->m_Force += fElem;
-    }
-}
-
 void lin_solve ( int N, int b, float * x, float * x0, float a, float c, bool* boundary )
 {
     int i, j, k;

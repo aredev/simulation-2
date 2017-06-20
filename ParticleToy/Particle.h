@@ -27,4 +27,8 @@ public:
     void drawInitial();
 
     void drawDistance();
+
+    void setColour(float c);
+
+    float colour;
 };

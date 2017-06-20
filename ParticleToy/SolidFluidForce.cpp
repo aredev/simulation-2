@@ -10,15 +10,13 @@
 #define FOR_EACH_CELL for ( i=1 ; i<=N ; i++ ) { for ( j=1 ; j<=N ; j++ ) {
 #define END_FOR }}
 
-SolidFluidForce::SolidFluidForce(std::vector<Particle *> solids, std::vector<Marker *> *markers, float kint, float zint, float dint, float * u, float * v, float* dens) : Force() {
-    this->markers = markers;
+SolidFluidForce::SolidFluidForce(std::vector<Particle *> solids, float * u, float * v, float * u_add, float * v_add, float* dens) : Force() {
     this->particles = solids;
-    this->kint = kint;
-    this->zint = zint;
-    this->dint = dint;
     this->u = u;
     this->v = v ;
     this->dens = dens;
+    this->u_add = u_add;
+    this->v_add = v_add;
 }
 
 
@@ -56,6 +54,9 @@ void SolidFluidForce::computeForce() {
                 }
             }
 
+//            Add the force of the entity to the marker.
+            u_add[IX(i,j)] += (fElem[0] ) * 2+ u_add[IX(i + 1,j + 1)] *2;
+            v_add[IX(i,j)] += (fElem[1] ) *2 + v_add[IX(i + 1,j + 1)] *2;
 
         END_FOR
         solid->m_Force += fElem;
@@ -63,33 +64,5 @@ void SolidFluidForce::computeForce() {
         solid->m_Force *= 0.93f;
     }
 
-//    printf("Markers %d \n", markers->size());
-//    for (auto &solid: particles) {
-//        Vec2f fElem = Vec2f(0, 0);
-//        Vec2f vElem = Vec2f(0.0, 0.0);
-//        for (int i = 0 ; i < markers->size(); i++) {
-//
-////            i = (int)((       marker->m_Position[0] /(float)512)*64+1);
-////            j = (int)(((512-marker->m_Position[1])/(float)512)*64+1);
-////
-////            float x, y, h;
-////            h = 1.0f / N;
-////            x = (i - 0.5f) * h;
-////            y = (j - 0.5f) * h;
-//
-//            Marker* marker = markers->at(i);
-//
-//            float distance = sqrtf(
-//                    powf(solid->m_Position[0] - marker->m_Position[0], 2.0) +
-//                    powf(solid->m_Position[1] - marker->m_Position[1], 2.0)
-//            );
-//
-//            if (distance < 0.01f) {
-//                vElem += marker->m_Velocity;
-//            }
-//
-//
-//        }
-//        solid->m_Velocity = vElem;
-//    }
 }
+

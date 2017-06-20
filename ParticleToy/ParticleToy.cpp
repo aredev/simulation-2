@@ -336,7 +336,6 @@ static void draw_forces(void){
     for (auto &force : forceVector){
         force->draw();
     }
-
 }
 
 /*

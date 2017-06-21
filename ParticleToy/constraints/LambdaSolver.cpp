@@ -1,6 +1,5 @@
 #include "LambdaSolver.h"
 #include "Eigen/Dense"
-#include "linearSolver.h"
 #include "Eigen/IterativeLinearSolvers"
 #include "ConstraintForce.h"
 

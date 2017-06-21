@@ -3,7 +3,7 @@
 
 
 #include <vector>
-#include "Particle.h"
+#include "../Particle.h"
 
 class Force {
 

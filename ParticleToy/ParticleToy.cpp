@@ -1,11 +1,11 @@
 #include "Particle.h"
-#include "SpringForce.h"
-#include "RodConstraint.h"
-#include "CircularWireConstraint.h"
-#include "GravityForce.h"
-#include "SlidingWireConstraint.h"
-#include "HorizontalForce.h"
-#include "WallForce.h"
+#include "forces/SpringForce.h"
+#include "constraints/RodConstraint.h"
+#include "constraints/CircularWireConstraint.h"
+#include "forces/GravityForce.h"
+#include "constraints/SlidingWireConstraint.h"
+#include "forces/HorizontalForce.h"
+#include "forces/WallForce.h"
 
 #include <GL/glut.h>
 #include "string.h"

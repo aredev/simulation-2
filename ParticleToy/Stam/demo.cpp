@@ -19,15 +19,20 @@
 #include <GL/glut.h>
 #include <../include/gfx/vec2.h>
 #include "../Particle.h"
-#include "../Force.h"
-#include "../ConstraintForce.h"
-#include "../GravityForce.h"
+#include "../forces/Force.h"
+#include "../constraints/ConstraintForce.h"
+#include "../forces/GravityForce.h"
 #include "Marker.h"
 #include "RigidBody.h"
 
 /* macros */
 
 #include "Macros.h"
+#include "../solvers/Solver.h"
+#include "../solvers/RK4.h"
+#include "../solvers/Midpoint.h"
+#include "../solvers/ForwardEuler.h"
+#include "../solvers/RigidForwardEuler.h"
 
 using namespace Eigen;
 
@@ -67,6 +72,8 @@ std::vector<Particle *> pVector;
 std::vector<Particle *> solidParticles;
 std::vector<Force *> forceVector;
 std::vector<ConstraintForce *> constraintForces;
+std::vector<Solver *> solvers = {new ForwardEuler(), new Midpoint(), new RK4()};
+std::vector<Solver *> rigidSolvers = {new RigidForwardEuler()};
 
 
 /*
@@ -319,6 +326,21 @@ static void draw_particles() {
     for (auto &partice : pVector) {
         partice->draw();
     }
+}
+
+void simulation_step(std::vector<Particle *> particles, std::vector<Force *> forces, std::vector<ConstraintForce *> constraints, float dt, int integrationSchemeIndex) {
+//    switch (integrationSchemeIndex){
+//        case 0:
+//            evaluate(particles, forces, constraints, dt);
+//            break;
+//        case 1:
+//            evaluate(particles, forces, constraints, dt);
+//            break;
+//        case 2:
+//            RK4::evaluate(particles, forces, constraints, dt);
+//            break;
+//    }
+    solvers[integrationSchemeIndex]->evaluate(particles, forces, constraints, dt);
 }
 
 /**

@@ -2,7 +2,7 @@
 #define SIMULATION_1_CONSTRAINTFORCE_H
 
 
-#include "Force.h"
+#include "../forces/Force.h"
 #include "Eigen/Dense"
 
 using Eigen::MatrixXd;

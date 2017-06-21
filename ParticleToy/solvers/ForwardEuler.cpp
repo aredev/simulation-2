@@ -1,20 +1,13 @@
 #include <vector>
-#include "Particle.h"
-#include "Force.h"
-#include "ConstraintForce.h"
-#include "LambdaSolver.h"
+#include "../Particle.h"
+#include "../forces/Force.h"
+#include "../constraints/ConstraintForce.h"
+#include "../constraints/LambdaSolver.h"
 #include "ForwardEuler.h"
 
 void ForwardEuler::evaluate(std::vector<Particle *> particles, std::vector<Force *> forces,
                             std::vector<ConstraintForce *> constraints, float dt) {
-    // Clear the forces
-    Force::clearForces(particles);
-    // Apply forces
-    for (auto &force: forces) {
-        force->computeForce();
-    }
-    //Constraints
-    LambdaSolver::solve(particles, constraints, 60, 5);
+    step(particles, forces, constraints);
 
     // Apply changes in velocity
     for (auto &particle: particles) {

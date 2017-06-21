@@ -1,7 +1,7 @@
 #include <vector>
-#include "Particle.h"
+#include "../Particle.h"
 #include "RK4.h"
-#include "LambdaSolver.h"
+#include "../constraints/LambdaSolver.h"
 
 void applyForces(std::vector<Force *> forces) {
     for (auto &force : forces) {
@@ -29,12 +29,7 @@ RK4::evaluate(std::vector<Particle *> particles, std::vector<Force *> forces,
         orgPositions.push_back(particle->m_Position);
     }
 
-    // Clear forces
-    Force::clearForces(particles);
-    // Apply forces
-    applyForces(forces);
-    // Constraints
-    LambdaSolver::solve(particles, constraints, 60, 5);
+    step(particles, forces, constraints);
 
     // Calculate k1's
     for (auto &particle: particles) {
@@ -44,12 +39,7 @@ RK4::evaluate(std::vector<Particle *> particles, std::vector<Force *> forces,
     }
 
     i = 0;
-    // Clear forces
-    Force::clearForces(particles);
-    // Apply forces
-    applyForces(forces);
-    // Constraints
-    LambdaSolver::solve(particles, constraints, 60, 5);
+    step(particles, forces, constraints);
 
     // Calculate k2's
     for (auto &particle: particles) {
@@ -60,12 +50,7 @@ RK4::evaluate(std::vector<Particle *> particles, std::vector<Force *> forces,
     }
 
     i = 0;
-    // Clear forces
-    Force::clearForces(particles);
-    // Apply forces
-    applyForces(forces);
-    // Constraints
-    LambdaSolver::solve(particles, constraints, 60, 5);
+    step(particles, forces, constraints);
 
     // Calculate k3's
     for (auto &particle: particles) {
@@ -76,12 +61,7 @@ RK4::evaluate(std::vector<Particle *> particles, std::vector<Force *> forces,
     }
 
     i = 0;
-    // Clear forces
-    Force::clearForces(particles);
-    // Apply forces
-    applyForces(forces);
-    // Constraints
-    LambdaSolver::solve(particles, constraints, 60, 5);
+    step(particles, forces, constraints);
 
     // Calculate k4's and do the final evaluation using the original position
     for (auto &particle: particles) {

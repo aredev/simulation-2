@@ -16,48 +16,39 @@ class RigidBody : public Particle {
 public:
     RigidBody();
 
-    RigidBody(float *is_polygon_edge, float *mass, float *v, int N);
+    RigidBody(float *is_polygon_edge, float *mass, float *v, float *u_prev, float *v_prev, int N);
 
+
+    // Functions
     void calculateCenterOfMass();
 
     void calculateTorque();
 
-    void calculateLinearMomentum();
-
     void calculateAuxiliaries();
 
+    void calculateAngularVelocity();
 
-private:
-    // Functions
-    void calculateV();
-
-    void calculateIinverse();
-
-    void calculateIbody();
-
-    void calculateOmega();
+    void calculateMomentumOfIntertia();
 
     // Pointers for cell information
     float *m_is_polygon_edge;
     float *m_mass;
     float *m_v;
+    float *u_prev;
+    float *v_prev;
     const int N;
-
-    /* Constant quantities */
-    Matrix2f Ibody, /* Ibody */
-            Ibodyinv; /* I−1 body (inverse of Ibody) */
 
     /* State variables */
     Vector2f x;
-    Matrix2f R; /* R.t/ */
+    /* See slide 18 of cs685-rbm.pdf */
+    Vector2f Rdot; /* R.t */
+    Matrix2f R;
     Vector2f P, /* P.t/ */
             L; /* L.t/ */
 
     /* Derived quantities (auxiliary variables) */
-    Matrix2f Iinv;  /* I−1.t/ */
-    Vector2f v,     /* v.t/ */
-            omega;  /* !.t/ */
-
+    float I;  /* I−1.t/ */
+    Vector2f omega;
     /* Computed quantities */
     Vector2f torque; /* .t/ */
 };

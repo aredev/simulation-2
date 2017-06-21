@@ -3,18 +3,19 @@
 //
 
 #include <vector>
-#include "Particle.h"
-#include "ConstraintForce.h"
+#include "Solver.h"
+#include "../constraints/ConstraintForce.h"
+#include "../forces/Force.h"
 
 #ifndef SIMULATION_1_FORWARDEULER_H
 #define SIMULATION_1_FORWARDEULER_H
 
 #endif //SIMULATION_1_FORWARDEULER_H
 
-class ForwardEuler {
+class ForwardEuler : public Solver{
 public:
 
-    static void
+    void
     evaluate(std::vector<Particle *> particles, std::vector<Force *> forces, std::vector<ConstraintForce *> constraints,
              float dt);
 };

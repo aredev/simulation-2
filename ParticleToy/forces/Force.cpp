@@ -1,4 +1,5 @@
 #include "Force.h"
+#include "../Stam/RigidBody.h"
 
 Force::Force() {}
 

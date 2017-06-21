@@ -43,20 +43,34 @@ void SolidFluidForce::computeForce() {
                 );
 
                 if (distance < 0.05f) {
-//                solid->m_Velocity = Vec2f(u[IX(i,j)], v[IX(i,j)]);
-//                solid->m_Velocity *= 0.97;
                     float xDist = fabsf(solid->m_Position[0] - x);
                     float yDist = fabsf(solid->m_Position[1] - y);
 
                     fElem += -1 * kint * ( Vec2f(xDist, yDist) - Vec2f(dint, dint) ) - (zint * ( Vec2f(u[IX(i,j)] * xDist, v[IX(i,j)] * yDist) ));
-
-//
                 }
             }
 
-//            Add the force of the entity to the marker.
-            u_add[IX(i,j)] += (fElem[0] ) * 2+ u_add[IX(i + 1,j + 1)] *2;
-            v_add[IX(i,j)] += (fElem[1] ) *2 + v_add[IX(i + 1,j + 1)] *2;
+//          Add the force of the entity to the marker.
+
+            Vec2f Fadjacent = Vec2f(0.0, 0.0);
+            Vec2f lambda = Vec2f(0.0, 0.0);
+            //If there is space to the right
+            if (i+1 < N){
+                //Use n = 0
+                Fadjacent = Vec2f(u_add[IX(i + 1,j)], v_add[IX(i + 1,j)]); //Get the force of the element to the right
+                lambda = Vec2f(1.0f, 0.0f); //Lambda is [delta_00, delta_10]
+            }else if (j+1 < N){
+                // Use n = 1
+                Fadjacent = Vec2f(u_add[IX(i,j+1)], v_add[IX(i,j+1)]); //Get the force of the element to the top
+                lambda = Vec2f(0.0f, 1.0f); //Lambda is [delta_01 , delta_11]
+            }
+            Vec2f addForce = ( fElem / 2 * lambda ) + ( Fadjacent / 2 * lambda );
+
+
+            u_add[IX(i, j)] += addForce[0];
+            v_add[IX(i, j)] += addForce[1];
+
+
 
         END_FOR
         solid->m_Force += fElem;

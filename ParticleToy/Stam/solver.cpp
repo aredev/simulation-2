@@ -59,6 +59,13 @@ void lin_solve ( int N, int b, float * x, float * x0, float a, float c, bool* bo
     }
 }
 
+/**
+ * Implements vorticity confinement
+ */
+void vorticity_confinement( float * u, float * v, int N, float dt ){
+
+}
+
 void diffuse ( int N, int b, float * x, float * x0, float diff, float dt, bool* boundary )
 {
     float a=dt*diff*N*N;

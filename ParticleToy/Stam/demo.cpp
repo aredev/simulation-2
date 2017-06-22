@@ -26,6 +26,7 @@
 #include "Marker.h"
 #include "../SolidFluidForce.h"
 #include "../SpringForce.h"
+#include "../BoundaryForce.h"
 
 /* macros */
 
@@ -52,6 +53,10 @@ static void draw_forces(void);
 static void find_particle_at(int x, int y);
 
 void draw_cloth();
+/**
+ * Draws 4 particles, interconnected using four springs.
+ */
+void draw_simple_solid_object() ;
 
 /* global variables */
 
@@ -65,6 +70,7 @@ static float * dens, * dens_prev;
 static bool * b; //boundary
 static bool withBool = false;
 static bool particleDraggable = false;
+static std::vector<Vec2f> boundaries;
 
 static int win_id;
 static int win_x, win_y;
@@ -111,6 +117,8 @@ static void clear_data ( void )
         particle->reset();
         forceVector.clear();
     }
+
+    draw_simple_solid_object();
 }
 
 static int allocate_data ( void )
@@ -301,6 +309,7 @@ static void key_func ( unsigned char key, int x, int y )
         case 'b':
         case 'B':
             withBool = !withBool;
+            printf("Boundary mode %d\n", withBool);
             break;
         case 'c':
         case 'C':
@@ -363,10 +372,7 @@ static void mouse_func (int button, int state, int x, int y )
     omx = my = y;
 
     mouse_down[button] = state == GLUT_DOWN;
-
 }
-
-
 
 static void motion_func ( int x, int y )
 {
@@ -378,6 +384,10 @@ static void motion_func ( int x, int y )
         Particle* p = find_particle_at(normalizedMouse[0], normalizedMouse[1]);
         p->m_Position = normalizedMouse;
         p->setColour(0.5f);
+    }
+
+    if (withBool){
+        boundaries.push_back(Vec2f(x,y));
     }
 
 }
@@ -476,14 +486,16 @@ void draw_simple_solid_object() {
     Particle* pright = new Particle(center+Vec2f(0.2f, 0.2f), 1.0f);
     Particle* pbottom = new Particle(center-Vec2f(0.3f, 0.3f), 1.0f);
 
-    solidParticles.push_back(pbottom);
+//    solidParticles.push_back(pbottom);
     solidParticles.push_back(p);
-    solidParticles.push_back(pright);
+//    solidParticles.push_back(pright);
 
-    forceVector.push_back(new SpringForce(pbottom, p, 0.2, 0.1, 0.1));
-    forceVector.push_back(new SpringForce(p, pright, 0.2, 0.1, 0.1));
+//    forceVector.push_back(new SpringForce(pbottom, p, 0.2, 0.1, 0.1));
+//    forceVector.push_back(new SpringForce(p, pright, 0.2, 0.1, 0.1));
 
     forceVector.push_back(new SolidFluidForce(solidParticles, u, v, u_prev, v_prev, dens));
+
+    forceVector.push_back(new BoundaryForce(solidParticles, boundaries));
 
 //    forceVector.push_back(new GravityForce(solidParticles));
 }

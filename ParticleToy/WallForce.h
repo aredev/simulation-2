@@ -11,6 +11,7 @@ public:
 
     WallForce(Particle *p1, double x);
 
+
     void computeForce() override;
 
     void draw() override;

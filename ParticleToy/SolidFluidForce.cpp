@@ -61,10 +61,11 @@ void SolidFluidForce::computeForce() {
                 lambda = Vec2f(1.0f, 0.0f); //Lambda is [delta_00, delta_10]
             }else if (j+1 < N){
                 // Use n = 1
-                Fadjacent = Vec2f(u_add[IX(i,j+1)], v_add[IX(i,j+1)]); //Get the force of the element to the top
+                Fadjacent = Vec2f(u_add[IX(i,j+1)], v_add[IX(i,j + 1)]); //Get the force of the element to the top
                 lambda = Vec2f(0.0f, 1.0f); //Lambda is [delta_01 , delta_11]
             }
             Vec2f addForce = ( fElem / 2 * lambda ) + ( Fadjacent / 2 * lambda );
+
 
 
             u_add[IX(i, j)] += addForce[0] * 2;

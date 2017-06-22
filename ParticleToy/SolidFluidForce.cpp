@@ -50,7 +50,7 @@ void SolidFluidForce::computeForce() {
                 }
             }
 
-//          Add the force of the entity to the marker.
+//          Add the force of the entity to the marker. This ensures that the solid also exerts force on the fluid.
 
             Vec2f Fadjacent = Vec2f(0.0, 0.0);
             Vec2f lambda = Vec2f(0.0, 0.0);
@@ -69,7 +69,7 @@ void SolidFluidForce::computeForce() {
 
             u_add[IX(i, j)] += addForce[0] * 2;
             v_add[IX(i, j)] += addForce[1] * 2;
-            
+
         END_FOR
         solid->m_Force += fElem;
         solid->m_Velocity *= 0.99f;

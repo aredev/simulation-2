@@ -576,9 +576,9 @@ int main ( int argc, char ** argv )
     clear_data ();
 
     //Init system
-//    draw_simple_solid_object();
+    draw_simple_solid_object();
 
-    draw_cloth();
+//    draw_cloth();
 
     win_x = 512;
     win_y = 512;

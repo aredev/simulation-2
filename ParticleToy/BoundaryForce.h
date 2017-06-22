@@ -14,16 +14,18 @@ public:
     BoundaryForce();
 
 
-    BoundaryForce(std::vector<Particle *> p, std::vector<Vec2f> const &bc);
+    BoundaryForce(std::vector<Particle *> p, std::vector<Vec2f> &bc);
 
+
+    BoundaryForce(std::vector<Particle *> p, std::vector<Vec2f> *bc);
 
     void computeForce() override;
 
     void draw() override;
 
     std::vector<Particle *> particles;
-    std::vector<Vec2f> boundaries;
-    float epsilon = 0.005f;
+    std::vector<Vec2f> *boundaries;
+    float epsilon = 0.025f;
 
 };
 

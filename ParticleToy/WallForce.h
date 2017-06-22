@@ -11,6 +11,7 @@ public:
 
     WallForce(Particle *p1, double x);
 
+    WallForce(Particle *p1, double x, double y);
 
     void computeForce() override;
 
@@ -18,7 +19,9 @@ public:
 
 private:
     double x;
+    double y = -1.0f;
     Particle* p;
+    float epsilon = 0.025f;
 
 };
 

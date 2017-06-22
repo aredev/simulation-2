@@ -27,6 +27,7 @@
 #include "../SolidFluidForce.h"
 #include "../SpringForce.h"
 #include "../BoundaryForce.h"
+#include "../WallForce.h"
 
 /* macros */
 
@@ -77,9 +78,6 @@ static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
 
-static Vec2f F_marks[64*64] = { Vec2f(0.0f, 0.0f) }; //2D array to hold the force on the marker per (i, j)
-
-std::vector<Particle *> pVector;
 std::vector<Marker *> markers;
 std::vector<Particle *> solidParticles;
 std::vector<Force *> forceVector;
@@ -387,7 +385,7 @@ static void motion_func ( int x, int y )
     }
 
     if (withBool){
-        boundaries.push_back(Vec2f(x,y));
+        boundaries.push_back(getTransformedCoordinates(x, y));
     }
 
 }
@@ -495,8 +493,8 @@ void draw_simple_solid_object() {
 
     forceVector.push_back(new SolidFluidForce(solidParticles, u, v, u_prev, v_prev, dens));
 
-    forceVector.push_back(new BoundaryForce(solidParticles, boundaries));
-
+    forceVector.push_back(new BoundaryForce(solidParticles, &boundaries));
+    
 //    forceVector.push_back(new GravityForce(solidParticles));
 }
 

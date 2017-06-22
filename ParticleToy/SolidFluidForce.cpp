@@ -67,11 +67,9 @@ void SolidFluidForce::computeForce() {
             Vec2f addForce = ( fElem / 2 * lambda ) + ( Fadjacent / 2 * lambda );
 
 
-            u_add[IX(i, j)] += addForce[0];
-            v_add[IX(i, j)] += addForce[1];
-
-
-
+            u_add[IX(i, j)] += addForce[0] * 2;
+            v_add[IX(i, j)] += addForce[1] * 2;
+            
         END_FOR
         solid->m_Force += fElem;
         solid->m_Velocity *= 0.99f;

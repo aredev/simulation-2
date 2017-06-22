@@ -51,6 +51,8 @@ static void draw_forces(void);
 
 static void find_particle_at(int x, int y);
 
+void draw_cloth();
+
 /* global variables */
 
 static int N;
@@ -574,8 +576,9 @@ int main ( int argc, char ** argv )
     clear_data ();
 
     //Init system
-    draw_simple_solid_object();
+//    draw_simple_solid_object();
 
+    draw_cloth();
 
     win_x = 512;
     win_y = 512;
@@ -584,4 +587,33 @@ int main ( int argc, char ** argv )
     glutMainLoop ();
 
     exit ( 0 );
+}
+
+void draw_cloth() {
+    float x, y, h;
+    h = 1.0f/N;
+    x = (N/2-0.5f)*h;
+    y = (N/2-0.5f)*h;
+
+    Vec2f center = Vec2f(x, y);
+    double spacing = 0.05;
+
+    int SIZE = 3;
+
+    for (int i = 0; i < SIZE; ++i) {
+        for (int j = 0; j < SIZE; ++j) {
+            Particle *p = new Particle(Vec2f(center[0] + j * spacing, center[1] - i * spacing), 1.0f);
+            solidParticles.push_back(p);
+
+            if (j > 0) {
+                forceVector.push_back(new SpringForce(solidParticles[SIZE * i + j], solidParticles[SIZE * i + j - 1], spacing, 1, 1));
+            }
+
+            if (i > 0) {
+                forceVector.push_back(new SpringForce(solidParticles[SIZE * i + j], solidParticles[SIZE * i + j - SIZE], spacing, 1, 1));
+            }
+        }
+    }
+
+    forceVector.push_back(new SolidFluidForce(solidParticles, u, v, u_prev, v_prev, dens));
 }

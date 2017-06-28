@@ -35,6 +35,8 @@ set(SOURCE_FILES
         ParticleToy/solvers/ForwardEuler.h
         ParticleToy/solvers/RK4.cpp
         ParticleToy/solvers/RK4.h
+        ParticleToy/solvers/RigidRK4.cpp
+        ParticleToy/solvers/RigidRK4.h
         ParticleToy/solvers/Midpoint.cpp
         ParticleToy/solvers/Midpoint.h
         ParticleToy/constraints/LambdaSolver.cpp
@@ -62,7 +64,8 @@ set(SOURCE_FILES
         ParticleToy/solvers/Solver.cpp
         ParticleToy/solvers/Solver.h
         ParticleToy/forces/MomentumForce.cpp
-        ParticleToy/forces/MomentumForce.h)
+        ParticleToy/forces/MomentumForce.h
+        )
 
 find_package (OpenGL REQUIRED)
 

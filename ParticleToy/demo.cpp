@@ -32,7 +32,7 @@
 #include "solvers/RK4.h"
 #include "solvers/Midpoint.h"
 #include "solvers/ForwardEuler.h"
-#include "particles/ParticleSystem.h"
+
 
 using namespace Eigen;
 
@@ -42,8 +42,9 @@ extern void dens_step(int N, float *x, float *x0, float *u, float *v, float diff
 
 extern void vel_step(int N, float *u, float *v, float *u0, float *v0, float visc, float dt);
 
-
 static void transform_to_markers();
+
+void init_rigid();
 
 /* global variables */
 
@@ -61,6 +62,7 @@ static int mouse_down[3];
 static int omx, omy, mx, my;
 
 static ParticleSystem *particleSystem;
+std::vector<Marker *> markers;
 
 std::vector<Solver *> solvers;
 
@@ -93,6 +95,7 @@ static void clear_data() {
     for (auto &particle : particleSystem->particles) {
         particle->reset();
     }
+    init_rigid();
 }
 
 static int allocate_data() {
@@ -274,7 +277,6 @@ static void idle_func(void) {
     transform_to_markers();
     // Simulation step
     solvers[2]->simulationStep(particleSystem, dt);
-
     glutSetWindow(win_id);
     glutPostRedisplay();
 }
@@ -306,8 +308,8 @@ static void display_func(void) {
 
     if (dvel) draw_velocity();
     else draw_density();
+    particleSystem->draw();
 
-    particleSystem->drawParticles();
     post_display();
 }
 
@@ -342,15 +344,33 @@ static void open_glut_window(void) {
 }
 
 
+void init_rigid(){
+    float x, y, h;
+    Particle * p1, * p2, * p3, * p4;
+
+    h = 1.0f/N;
+    x = (N/2-0.5f)*h;
+    y = (N/2-0.5f)*h;
+
+    Vec2f center = Vec2f(x, y);
+    p1 = new Particle(center + Vec2f(-0.2f, 0.2f), 1.0f);
+    p2 = new Particle(center + Vec2f(-0.2f, -0.2f), 1.0f);
+    p3 = new Particle(center + Vec2f(0.2f, -0.2f), 1.0f);
+    p4 = new Particle(center + Vec2f(0.2f, 0.2f), 1.0f);
+
+    particleSystem->particles.push_back(p1);
+    particleSystem->particles.push_back(p2);
+    particleSystem->particles.push_back(p3);
+    particleSystem->particles.push_back(p4);
+
+    particleSystem->draw();
+}
+
 void init_system(){
     particleSystem = new ParticleSystem();
     // Initialize solvers
     solvers = {new ForwardEuler(), new Midpoint(), new RK4()};
-    // Particles
-    Particle *p = new Particle(Vec2f(0.5, 0.5), 1.0f);
-    particleSystem->particles.push_back(p);
-    Force *gravity = new GravityForce(particleSystem->particles);
-    particleSystem->forces.push_back(gravity);
+    init_rigid();
 }
 
 /*

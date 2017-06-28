@@ -494,7 +494,7 @@ void draw_simple_solid_object() {
     forceVector.push_back(new SolidFluidForce(solidParticles, u, v, u_prev, v_prev, dens));
 
     forceVector.push_back(new BoundaryForce(solidParticles, &boundaries));
-    
+
 //    forceVector.push_back(new GravityForce(solidParticles));
 }
 

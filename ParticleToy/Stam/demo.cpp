@@ -43,6 +43,8 @@ extern void simulation_step(std::vector<Particle *> particles,
                             float dtx,
                             int integrationSchemeIndex);
 
+extern void vorticity_confinement( float * u, float * v, int N, float dt );
+
 static void draw_particles();
 
 static void transform_to_markers();
@@ -404,6 +406,7 @@ static void idle_func ( void )
     get_from_UI ( dens_prev, u_prev, v_prev );
 
     //compute vorticity confinement
+    vorticity_confinement( u, v, N, 1.0f/N );
 
     simulation_step(solidParticles, forceVector, constraintForces, dt, 0);
     //u_prev, v_prev are the added sources.

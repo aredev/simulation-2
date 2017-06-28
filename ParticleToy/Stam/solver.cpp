@@ -58,25 +58,31 @@ void lin_solve ( int N, int b, float * x, float * x0, float a, float c, bool* bo
     }
 }
 
-float vorticity_vector(int i , int j, float* u, float * v ){
-    return u[IX(i+1,j)] - u[IX(i,j)] + v[IX(i, j+1)] - v[IX(i,j)];
+float vorticity_vector(int i , int j, float * u, float * v ){
+    int N = 64;
+    return u[IX(i+1, j)] - u[IX(i,j)] + v[IX(i, j+1)] - v[IX(i,j)];
 }
 
 /**
  * Implements vorticity confinement
  */
 void vorticity_confinement( float * u, float * v, int N, float dt ){
-    // gradient * u
     int i, j;
+    float epsilon = 0.1f;
+
     FOR_EACH_CELL
         if (i != 1 && j != 1 && i != N && j != N){
+            // gradient * u
             float du = vorticity_vector(i+1, j, u, v) - vorticity_vector(i, j, u, v);
             float dv = vorticity_vector(i, j + 1 , u, v) - vorticity_vector(i, j, u, v);
+
+            float length = sqrtf(du * du + dv * dv);
+
+            float frac = length / 2;
+
+            u[IX(i,j)] += epsilon * dt * (frac * du) * 5;
+            v[IX(i,j)] += epsilon * dt * (frac * dv) * 5;
         }
-
-
-
-
     END_FOR
 }
 

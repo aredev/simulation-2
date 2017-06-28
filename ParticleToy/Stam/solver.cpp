@@ -8,7 +8,6 @@
 
 #include "../Particle.h"
 
-
 #define IX(i,j) ((i)+(N+2)*(j))
 #define SWAP(x0,x) {float * tmp=x0;x0=x;x=tmp;}
 #define FOR_EACH_CELL for ( i=1 ; i<=N ; i++ ) { for ( j=1 ; j<=N ; j++ ) {
@@ -59,11 +58,26 @@ void lin_solve ( int N, int b, float * x, float * x0, float a, float c, bool* bo
     }
 }
 
+float vorticity_vector(int i , int j, float* u, float * v ){
+    return u[IX(i+1,j)] - u[IX(i,j)] + v[IX(i, j+1)] - v[IX(i,j)];
+}
+
 /**
  * Implements vorticity confinement
  */
 void vorticity_confinement( float * u, float * v, int N, float dt ){
+    // gradient * u
+    int i, j;
+    FOR_EACH_CELL
+        if (i != 1 && j != 1 && i != N && j != N){
+            float du = vorticity_vector(i+1, j, u, v) - vorticity_vector(i, j, u, v);
+            float dv = vorticity_vector(i, j + 1 , u, v) - vorticity_vector(i, j, u, v);
+        }
 
+
+
+
+    END_FOR
 }
 
 void diffuse ( int N, int b, float * x, float * x0, float diff, float dt, bool* boundary )

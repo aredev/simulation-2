@@ -402,7 +402,9 @@ static void reshape_func ( int width, int height )
 static void idle_func ( void )
 {
     get_from_UI ( dens_prev, u_prev, v_prev );
-//    transform_to_markers();
+
+    //compute vorticity confinement
+
     simulation_step(solidParticles, forceVector, constraintForces, dt, 0);
     //u_prev, v_prev are the added sources.
     vel_step ( N, u, v, u_prev, v_prev, visc, dt, b );

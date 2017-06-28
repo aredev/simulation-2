@@ -1,5 +1,5 @@
 #include "Force.h"
-#include "../Stam/RigidBody.h"
+#include "../particles/RigidBody.h"
 
 Force::Force() {}
 

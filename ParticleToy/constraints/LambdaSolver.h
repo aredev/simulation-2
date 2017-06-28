@@ -1,7 +1,7 @@
 #ifndef SIMULATION_1_LAMBDASOLVER_H
 #define SIMULATION_1_LAMBDASOLVER_H
 
-#include "../Particle.h"
+#include "../particles/Particle.h"
 #include "Eigen/Dense"
 #include "ConstraintForce.h"
 

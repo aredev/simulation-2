@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Particle.h"
+#include "../particles/Particle.h"
 #include "ConstraintForce.h"
 #include "Eigen/Dense"
 

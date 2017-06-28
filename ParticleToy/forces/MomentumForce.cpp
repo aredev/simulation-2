@@ -3,7 +3,7 @@
 //
 
 #include "MomentumForce.h"
-#include "../Stam/Macros.h"
+#include "../Macros.h"
 
 MomentumForce::MomentumForce(int N, float *mass, float *v, float *is_polygon_edge)
         : Force(), N(N), m_mass(mass), m_v(v), m_is_polygon_edge(is_polygon_edge) {

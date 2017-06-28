@@ -8,7 +8,7 @@
 
 #include <utility>
 #include <Eigen/StdVector>
-#include "../Particle.h"
+#include "Particle.h"
 
 using namespace Eigen;
 

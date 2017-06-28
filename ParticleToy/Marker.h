@@ -6,7 +6,7 @@
 #define SIMULATION_1_MARKER_H
 
 
-#include "../Particle.h"
+#include "particles/Particle.h"
 
 class Marker : public Particle{
 public:

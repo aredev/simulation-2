@@ -1,40 +1,33 @@
 #include <vector>
-#include "../Particle.h"
+#include "../particles/Particle.h"
 #include "../forces/Force.h"
-#include "../constraints/ConstraintForce.h"
+#include "../forces/ConstraintForce.h"
 #include "Midpoint.h"
 #include "../constraints/LambdaSolver.h"
 
-
-void Midpoint::evaluate(std::vector<Particle *> particles, std::vector<Force *> forces,
-                        std::vector<ConstraintForce *> constraints,
-                        float dt) {
-    unsigned i = 0;
-    // Vector for storing the original positions
-    std::vector<Vec2f> orgPositions;
-    // Clear previous positions
-    orgPositions.clear();
-    // Clear forces
-    Force::clearForces(particles);
-    // Save current positions as we need them later on
-    for (auto &particle: particles) {
-        orgPositions.push_back(particle->m_Position);
-    }
-    // Apply forces
-    for (auto &force: forces) {
-        force->computeForce();
-    }
-    // Apply changes in velocity
-    for (auto &particle: particles) {
-        particle->m_Velocity += (particle->m_Force/particle->m_Mass) * dt;
-        particle->m_Position += particle->m_Velocity * dt / 2.0f;
-    }
-
-    step(particles, forces, constraints);
-
-    // Final evaluation
-    for (auto &particle: particles) {
-        particle->m_Velocity += particle->m_Force * dt / 2.0f;
-        particle->m_Position = orgPositions[i++] + particle->m_Velocity * dt;
-    }
+void Midpoint::simulationStep(ParticleSystem *p, float dt) {
+    unsigned int particleDimension = this->particleDims(p);
+    vector<float> tmp1(particleDimension), tmp2(particleDimension), tmp3(particleDimension);
+    // Store starting point
+    particleGetState(p, tmp2);
+    // Calculate derivative of the particles
+    particleDerivative(p, tmp1);
+    // Take a step towards the midpoint
+    scaleVector(tmp1, dt * 0.5f);
+    // Add starting point to mid-point, and store
+    addVectors(tmp1, tmp2, tmp2);
+    // Save starting point
+    particleGetState(p, tmp3);
+    // Set to newly calculated state
+    particleSetState(p, tmp2);
+    // Calculate derivative of the particles
+    particleDerivative(p, tmp2);
+    // Take a time step
+    scaleVector(tmp2, dt);
+    // Add to starting point
+    addVectors(tmp2, tmp3, tmp3);
+    // Set new state
+    particleSetState(p, tmp3);
+    // Increment times
+    p->t += dt;
 }

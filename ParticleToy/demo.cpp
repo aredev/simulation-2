@@ -17,22 +17,22 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <GL/glut.h>
-#include <../include/gfx/vec2.h>
-#include "../Particle.h"
-#include "../forces/Force.h"
-#include "../constraints/ConstraintForce.h"
-#include "../forces/GravityForce.h"
+#include <gfx/vec2.h>
+#include "particles/Particle.h"
+#include "forces/Force.h"
+#include "constraints/ConstraintForce.h"
+#include "forces/GravityForce.h"
 #include "Marker.h"
-#include "RigidBody.h"
+#include "particles/RigidBody.h"
 
 /* macros */
 
 #include "Macros.h"
-#include "../solvers/Solver.h"
-#include "../solvers/RK4.h"
-#include "../solvers/Midpoint.h"
-#include "../solvers/ForwardEuler.h"
-#include "../solvers/RigidForwardEuler.h"
+#include "solvers/Solver.h"
+#include "solvers/RK4.h"
+#include "solvers/Midpoint.h"
+#include "solvers/ForwardEuler.h"
+#include "particles/ParticleSystem.h"
 
 using namespace Eigen;
 
@@ -42,14 +42,6 @@ extern void dens_step(int N, float *x, float *x0, float *u, float *v, float diff
 
 extern void vel_step(int N, float *u, float *v, float *u0, float *v0, float visc, float dt);
 
-extern void simulation_step(std::vector<Particle *> particles,
-                            std::vector<Force *> forces,
-                            std::vector<ConstraintForce *> constraints,
-                            float dtx,
-                            int integrationSchemeIndex);
-
-
-static void draw_particles();
 
 static void transform_to_markers();
 
@@ -61,19 +53,16 @@ static float force, source;
 static int dvel;
 
 static float *u, *v, *u_prev, *v_prev;
-static float *dens, *dens_prev, *mass, *is_polygon_edge;
+static float *dens, *dens_prev, *mass;
 
 static int win_id;
 static int win_x, win_y;
 static int mouse_down[3];
 static int omx, omy, mx, my;
 
-std::vector<Particle *> pVector;
-std::vector<Particle *> solidParticles;
-std::vector<Force *> forceVector;
-std::vector<ConstraintForce *> constraintForces;
-std::vector<Solver *> solvers = {new ForwardEuler(), new Midpoint(), new RK4()};
-std::vector<Solver *> rigidSolvers = {new RigidForwardEuler()};
+static ParticleSystem *particleSystem;
+
+std::vector<Solver *> solvers;
 
 
 /*
@@ -83,30 +72,30 @@ std::vector<Solver *> rigidSolvers = {new RigidForwardEuler()};
 */
 
 
-static void free_data(void) {
+static void free_data() {
     if (u) free(u);
     if (v) free(v);
     if (u_prev) free(u_prev);
     if (v_prev) free(v_prev);
     if (dens) free(dens);
     if (mass) free(mass);
-    if (is_polygon_edge) free(is_polygon_edge);
     if (dens_prev) free(dens_prev);
+
 }
 
-static void clear_data(void) {
-    int i, size = (N + 2) * (N + 2);
+static void clear_data() {
+    int size = (N + 2) * (N + 2);
 
-    for (i = 0; i < size; i++) {
-        u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = mass[i] = is_polygon_edge[i] = 0.0f;
+    for (int i = 0; i < size; i++) {
+        u[i] = v[i] = u_prev[i] = v_prev[i] = dens[i] = dens_prev[i] = mass[i] = 0.0f;
     }
 
-    for (auto &particle: pVector) {
+    for (auto &particle : particleSystem->particles) {
         particle->reset();
     }
 }
 
-static int allocate_data(void) {
+static int allocate_data() {
     int size = (N + 2) * (N + 2);
 
     u = (float *) malloc(size * sizeof(float));
@@ -116,7 +105,6 @@ static int allocate_data(void) {
     dens = (float *) malloc(size * sizeof(float));
     dens_prev = (float *) malloc(size * sizeof(float));
     mass = (float *) malloc(size * sizeof(float));
-    is_polygon_edge = (float *) malloc(size * sizeof(float));
 
     if (!u || !v || !u_prev || !v_prev || !dens || !dens_prev) {
         fprintf(stderr, "cannot allocate data\n");
@@ -133,7 +121,7 @@ static int allocate_data(void) {
   ----------------------------------------------------------------------
 */
 
-static void pre_display(void) {
+static void pre_display() {
     glViewport(0, 0, win_x, win_y);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -142,11 +130,11 @@ static void pre_display(void) {
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
-static void post_display(void) {
+static void post_display() {
     glutSwapBuffers();
 }
 
-static void draw_velocity(void) {
+static void draw_velocity() {
     int i, j;
     float x, y, h;
 
@@ -170,7 +158,7 @@ static void draw_velocity(void) {
     glEnd();
 }
 
-static void draw_density(void) {
+static void draw_density() {
     int i, j;
     float x, y, h, d00, d01, d10, d11;
 
@@ -284,14 +272,15 @@ static void idle_func(void) {
     vel_step(N, u, v, u_prev, v_prev, visc, dt);
     dens_step(N, dens, dens_prev, u, v, diff, dt);
     transform_to_markers();
-    simulation_step(pVector, forceVector, constraintForces, dt, 0);
+    // Simulation step
+    solvers[2]->simulationStep(particleSystem, dt);
 
     glutSetWindow(win_id);
     glutPostRedisplay();
 }
 
 static void transform_to_markers() {
-    pVector.clear();
+    particleSystem->particles.clear();
     int i, j;
     float x, y, h, d00, d01, d10, d11;
 
@@ -304,12 +293,12 @@ static void transform_to_markers() {
 
             d00 = dens[IX(i, j)];
             if (d00 > 0) {
-                pVector.push_back(new Marker(Vec2f(x, y), 1.0f, d00, 0));
+                particleSystem->particles.push_back(new Marker(Vec2f(x, y), 1.0f, d00, 0));
             }
         }
     }
 
-    forceVector.push_back(new GravityForce(pVector));
+    particleSystem->forces.push_back(new GravityForce(particleSystem->particles));
 }
 
 static void display_func(void) {
@@ -318,48 +307,9 @@ static void display_func(void) {
     if (dvel) draw_velocity();
     else draw_density();
 
-    draw_particles();
+    particleSystem->drawParticles();
     post_display();
 }
-
-static void draw_particles() {
-    for (auto &partice : pVector) {
-        partice->draw();
-    }
-}
-
-void simulation_step(std::vector<Particle *> particles, std::vector<Force *> forces, std::vector<ConstraintForce *> constraints, float dt, int integrationSchemeIndex) {
-//    switch (integrationSchemeIndex){
-//        case 0:
-//            evaluate(particles, forces, constraints, dt);
-//            break;
-//        case 1:
-//            evaluate(particles, forces, constraints, dt);
-//            break;
-//        case 2:
-//            RK4::evaluate(particles, forces, constraints, dt);
-//            break;
-//    }
-    solvers[integrationSchemeIndex]->evaluate(particles, forces, constraints, dt);
-}
-
-/**
- * Draws 4 particles, interconnected using four springs.
- */
-void draw_simple_solid_object() {
-    Vec2f center = Vec2f(0.0, 0.0);
-    Vec2f offset = Vec2f(0.2, 0.0);
-    Particle *p = new Particle(center, 1.0f);
-    Particle *pright = new Particle(center + offset, 1.0f);
-    Particle *pbottom = new Particle(center + Vec2f(0.0, -0.2), 1.0f);
-    Particle *prightbottom = new Particle(center + Vec2f(0.2, -0.2), 1.0f);
-
-    solidParticles.push_back(p);
-    solidParticles.push_back(pright);
-    solidParticles.push_back(pbottom);
-    solidParticles.push_back(prightbottom);
-}
-
 
 /*
   ----------------------------------------------------------------------
@@ -391,6 +341,17 @@ static void open_glut_window(void) {
 
 }
 
+
+void init_system(){
+    particleSystem = new ParticleSystem();
+    // Initialize solvers
+    solvers = {new ForwardEuler(), new Midpoint(), new RK4()};
+    // Particles
+    Particle *p = new Particle(Vec2f(0.5, 0.5), 1.0f);
+    particleSystem->particles.push_back(p);
+    Force *gravity = new GravityForce(particleSystem->particles);
+    particleSystem->forces.push_back(gravity);
+}
 
 /*
   ----------------------------------------------------------------------
@@ -440,14 +401,10 @@ int main(int argc, char **argv) {
 
     dvel = 0;
 
+    init_system();
+
     if (!allocate_data()) exit(1);
     clear_data();
-
-    //Init system
-    Particle *p = new Particle(Vec2f(0.5, 0.5), 1.0f);
-    pVector.push_back(p);
-    Force *gravity = new GravityForce(pVector);
-    forceVector.push_back(gravity);
 
     win_x = 512;
     win_y = 512;

@@ -2,8 +2,7 @@
 // Created by appie on 13-6-2017.
 //
 
-#include "solver.h"
-#include "Macros.h"
+#include "../Macros.h"
 
 void add_source ( int N, float * x, float * s, float dt )
 {

@@ -3,9 +3,9 @@
 
 
 #include <Eigen/StdVector>
-#include "Particle.h"
-#include "forces/Force.h"
-#include "constraints/ConstraintForce.h"
+#include "../particles/Particle.h"
+#include "../forces/Force.h"
+#include "../constraints/ConstraintForce.h"
 
 class SetUp {
 

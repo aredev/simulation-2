@@ -1,12 +1,12 @@
 #include "SetUp.h"
-#include "forces/SpringForce.h"
-#include "forces/GravityForce.h"
-#include "constraints/RodConstraint.h"
-#include "constraints/CircularWireConstraint.h"
-#include "constraints/SlidingWireConstraint.h"
-#include "forces/HorizontalForce.h"
-#include "forces/WallForce.h"
-#include "forces/AngularSpringForce.h"
+#include "../forces/SpringForce.h"
+#include "../forces/GravityForce.h"
+#include "../constraints/RodConstraint.h"
+#include "../constraints/CircularWireConstraint.h"
+#include "../constraints/SlidingWireConstraint.h"
+#include "../forces/HorizontalForce.h"
+#include "../forces/WallForce.h"
+#include "../forces/AngularSpringForce.h"
 
 double particleMass = 1.0f;
 Vec2f center = Vec2f(0.0, 0.0);

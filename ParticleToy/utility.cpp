@@ -3,7 +3,7 @@
 //
 
 #include <math.h>
-#include "Particle.h"
+#include "particles/Particle.h"
 #include "GL/freeglut.h"
 #include <vector>
 

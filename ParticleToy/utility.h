@@ -8,7 +8,7 @@
 #endif //SIMULATION_1_UTILITY_H
 
 #include <Eigen/StdVector>
-#include "Particle.h"
+#include "particles/Particle.h"
 
 namespace utility {
 

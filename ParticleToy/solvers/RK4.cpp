@@ -1,75 +1,65 @@
 #include <vector>
-#include "../Particle.h"
+#include "../particles/Particle.h"
 #include "RK4.h"
 #include "../constraints/LambdaSolver.h"
 
-void applyForces(std::vector<Force *> forces) {
-    for (auto &force : forces) {
-        force->computeForce();
-    }
+
+void RK4::simulationStep(ParticleSystem *p, float dt) {
+    unsigned int particleDimension = this->particleDims(p);
+
+    vector<float> tmp(particleDimension), mid(particleDimension), org(particleDimension),
+    k1(particleDimension), k2(particleDimension), k3 (particleDimension), k4(particleDimension);
+
+    // Store original state
+    particleGetState(p, org);
+
+    // Calculate derivative of the particles, store in k1
+    particleDerivative(p, tmp);
+    // Multiple with half of the time step
+    scaleVector(tmp, dt * 0.5f);
+    // Add vectors
+    addVectors(org, tmp, mid);
+    // Set new state
+    particleSetState(p, mid);
+    // Save k1
+    scaleVector(tmp, 2.0f, k1);
+
+    // Calculate derivative
+    particleDerivative(p, tmp);
+    // Multiply with time step
+    scaleVector(tmp, dt * 0.5f);
+    // Add vectors
+    addVectors(org, tmp, mid);
+    // Set new state
+    particleSetState(p, mid);
+    // Save k2
+    scaleVector(tmp, 2.0f, k2);
+
+    // Calculate derivative
+    particleDerivative(p, k3);
+    // Multiply with time step
+    scaleVector(k3, dt);
+    // Add vectors
+    addVectors(org, tmp, mid);
+    // Set new state
+    particleSetState(p, mid);
+
+    // Calculate derivative
+    particleDerivative(p, k4);
+    scaleVector(k4, dt);
+
+    // Final steps
+    scaleVector(k1, 1.0f/6.0f);
+    scaleVector(k2, 1.0f/3.0f);
+    scaleVector(k3, 1.0f/3.0f);
+    scaleVector(k4, 1.0f/6.0f);
+
+    addVectors(org, k1, org);
+    addVectors(org, k2, org);
+    addVectors(org, k3, org);
+    addVectors(org, k4, org);
+
+    particleSetState(p, org);
+
+    p->t += dt;
 }
-
-void
-RK4::evaluate(std::vector<Particle *> particles, std::vector<Force *> forces,
-              std::vector<ConstraintForce *> constraints,
-              float dt) {
-    // Vector for storing original positions
-    std::vector<Vec2f> orgPositions;
-    // Vectors for storing intermediate values
-    std::vector<Vec2f> k1s;
-    std::vector<Vec2f> k2s;
-    std::vector<Vec2f> k3s;
-    std::vector<Vec2f> k4s;
-
-    // Counter, used for looping through the k's
-    unsigned i = 0;
-
-    // Save current positions as we need them in every evaluation
-    for (auto &particle: particles) {
-        orgPositions.push_back(particle->m_Position);
-    }
-
-    step(particles, forces, constraints);
-
-    // Calculate k1's
-    for (auto &particle: particles) {
-        particle->m_Velocity += (particle->m_Force/particle->m_Mass) * dt;
-        k1s.push_back(particle->m_Velocity * dt);
-        particle->m_Position += particle->m_Velocity * dt / 2.0f;
-    }
-
-    i = 0;
-    step(particles, forces, constraints);
-
-    // Calculate k2's
-    for (auto &particle: particles) {
-        particle->m_Velocity += (particle->m_Force/particle->m_Mass) * dt;
-        k2s.push_back(particle->m_Velocity * dt);
-        particle->m_Position = orgPositions[i] + particle->m_Velocity * dt / 2.0f;
-        i++;
-    }
-
-    i = 0;
-    step(particles, forces, constraints);
-
-    // Calculate k3's
-    for (auto &particle: particles) {
-        particle->m_Velocity += (particle->m_Force/particle->m_Mass) * dt;
-        k3s.push_back(particle->m_Velocity * dt);
-        particle->m_Position = orgPositions[i] + particle->m_Velocity * dt;
-        i++;
-    }
-
-    i = 0;
-    step(particles, forces, constraints);
-
-    // Calculate k4's and do the final evaluation using the original position
-    for (auto &particle: particles) {
-        particle->m_Velocity += (particle->m_Force/particle->m_Mass) * dt;
-        k4s.push_back(particle->m_Velocity * dt);
-        particle->m_Position = orgPositions[i] + k1s[i] / 6.0f + k2s[i] / 3.0f + k3s[i] / 3.0f + k4s[i] / 6.0f;
-        i++;
-    }
-    orgPositions.clear();
-}
-

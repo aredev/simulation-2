@@ -1,18 +1,14 @@
 #include <vector>
-#include "../Particle.h"
-#include "../forces/Force.h"
-#include "../constraints/ConstraintForce.h"
-#include "../constraints/LambdaSolver.h"
 #include "ForwardEuler.h"
 
-void ForwardEuler::evaluate(std::vector<Particle *> particles, std::vector<Force *> forces,
-                            std::vector<ConstraintForce *> constraints, float dt) {
-    step(particles, forces, constraints);
+using namespace std;
 
-    // Apply changes in velocity
-    for (auto &particle: particles) {
-        particle->m_Velocity += ( (particle->m_Force/particle->m_Mass) * dt);
-        particle->m_Position += (particle->m_Velocity * dt);
-    }
-
+void ForwardEuler::simulationStep(ParticleSystem *p, float dt) {
+    vector<float> tmp1(this->particleDims(p)), tmp2(this->particleDims(p));
+    particleDerivative(p, tmp1);
+    scaleVector(tmp1, dt);
+    particleGetState(p, tmp2);
+    addVectors(tmp1, tmp2, tmp2);
+    particleSetState(p, tmp2);
+    p->t += dt;
 }

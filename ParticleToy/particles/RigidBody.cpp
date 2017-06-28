@@ -3,7 +3,7 @@
 //
 
 #include "RigidBody.h"
-#include "Macros.h"
+#include "../Macros.h"
 
 using namespace Eigen;
 

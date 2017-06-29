@@ -15,8 +15,9 @@ using namespace std;
 
 class RigidBody : public Particle {
 public:
-    RigidBody();
     RigidBody(float *mass, float *v, float *u_prev, float *v_prev, vector<Vec2f> &polyPoints, int N);
+    RigidBody(float *mass, float *v, float *u_prev, float *v_prev, int N);
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
     // Pointers for cell information
     float *m_mass;
@@ -31,7 +32,7 @@ public:
     This vector contains the positions, which transformed to the index of the grid, indicating which cells
     the convex hull of the rigid body covers.
     */
-    vector<Vec2f> *polyCells;
+    vector<Vec2f> polyCells;
 
 
     int N;
@@ -43,11 +44,22 @@ public:
     Vector2f P, /* P.t/ */
             L;  /* L.t/ */
 
+    /* Auxilarry variables */
+    Vector2f torque;
+    float I;
+
     // Functions
+    void draw();
+
+    void drawPolyPoints();
+
+    void drawPolyEdges();
 
     void rasterizePolyEdges();
 
     void calculateTorque();
+
+    void calculateVelocity();
 
     void calculateAuxiliaries();
 
@@ -55,9 +67,12 @@ public:
 
     void calculateMomentumOfIntertia();
 
+    void printPolyPointsGridIndices();
+
 private:
     void calculateCenterOfMass();
-    void BresenhamLineAlgorithm(float x1, float y1, float x2, float y2, vector<Vec2f> &polyCells );
+    void BresenhamLineAlgorithm(float x1, float y1, float x2, float y2);
+
 
 };
 

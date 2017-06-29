@@ -36,6 +36,8 @@ public:
     void drawForces();
 
     void drawVelocities();
+
+    void printParticleGridIndices();
 };
 
 

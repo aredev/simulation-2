@@ -21,7 +21,6 @@
 #include "particles/Particle.h"
 #include "forces/Force.h"
 #include "constraints/ConstraintForce.h"
-#include "forces/GravityForce.h"
 #include "Marker.h"
 #include "particles/RigidBody.h"
 
@@ -32,6 +31,7 @@
 #include "solvers/RK4.h"
 #include "solvers/Midpoint.h"
 #include "solvers/ForwardEuler.h"
+#include "forces/GravityForce.h"
 
 
 using namespace Eigen;
@@ -42,7 +42,7 @@ extern void dens_step(int N, float *x, float *x0, float *u, float *v, float diff
 
 extern void vel_step(int N, float *u, float *v, float *u0, float *v0, float visc, float dt);
 
-static void transform_to_markers();
+//static void transform_to_markers();
 
 void init_rigid();
 
@@ -82,7 +82,6 @@ static void free_data() {
     if (dens) free(dens);
     if (mass) free(mass);
     if (dens_prev) free(dens_prev);
-
 }
 
 static void clear_data() {
@@ -274,34 +273,33 @@ static void idle_func(void) {
     get_from_UI(dens_prev, u_prev, v_prev);
     vel_step(N, u, v, u_prev, v_prev, visc, dt);
     dens_step(N, dens, dens_prev, u, v, diff, dt);
-    transform_to_markers();
     // Simulation step
     solvers[2]->simulationStep(particleSystem, dt);
     glutSetWindow(win_id);
     glutPostRedisplay();
 }
 
-static void transform_to_markers() {
-    particleSystem->particles.clear();
-    int i, j;
-    float x, y, h, d00, d01, d10, d11;
-
-    h = 1.0f / N;
-
-    for (i = 0; i <= N; i++) {
-        x = (i - 0.5f) * h;
-        for (j = 0; j <= N; j++) {
-            y = (j - 0.5f) * h;
-
-            d00 = dens[IX(i, j)];
-            if (d00 > 0) {
-                particleSystem->particles.push_back(new Marker(Vec2f(x, y), 1.0f, d00, 0));
-            }
-        }
-    }
-
-    particleSystem->forces.push_back(new GravityForce(particleSystem->particles));
-}
+//static void transform_to_markers() {
+//    particleSystem->particles.clear();
+//    int i, j;
+//    float x, y, h, d00, d01, d10, d11;
+//
+//    h = 1.0f / N;
+//
+//    for (i = 0; i <= N; i++) {
+//        x = (i - 0.5f) * h;
+//        for (j = 0; j <= N; j++) {
+//            y = (j - 0.5f) * h;
+//
+//            d00 = dens[IX(i, j)];
+//            if (d00 > 0) {
+//                particleSystem->particles.push_back(new Marker(Vec2f(x, y), 1.0f, d00, 0));
+//            }
+//        }
+//    }
+//
+//    particleSystem->forces.push_back(new GravityForce(particleSystem->particles));
+//}
 
 static void display_func(void) {
     pre_display();
@@ -344,33 +342,30 @@ static void open_glut_window(void) {
 }
 
 
-void init_rigid(){
+void init_rigid() {
     float x, y, h;
-    Particle * p1, * p2, * p3, * p4;
+    Vec2f p1, p2, p3, p4;
 
-    h = 1.0f/N;
-    x = (N/2-0.5f)*h;
-    y = (N/2-0.5f)*h;
+    h = 1.0f / N;
+    x = (N / 2 - 0.5f) * h;
+    y = (N / 2 - 0.5f) * h;
 
     Vec2f center = Vec2f(x, y);
-    p1 = new Particle(center + Vec2f(-0.2f, 0.2f), 1.0f);
-    p2 = new Particle(center + Vec2f(-0.2f, -0.2f), 1.0f);
-    p3 = new Particle(center + Vec2f(0.2f, -0.2f), 1.0f);
-    p4 = new Particle(center + Vec2f(0.2f, 0.2f), 1.0f);
+    p1 = Vec2f(center + Vec2f(-0.1f, 0.1f));
+    p2 = Vec2f(center + Vec2f(-0.1f, -0.1f));
+    p3 = Vec2f(center + Vec2f(0.1f, -0.1f));
+//    p4 = Vec2f(center + Vec2f(0.1f, 0.1f));
 
-    particleSystem->particles.push_back(p1);
-    particleSystem->particles.push_back(p2);
-    particleSystem->particles.push_back(p3);
-    particleSystem->particles.push_back(p4);
-
-    particleSystem->draw();
+    RigidBody *r = new RigidBody(mass, v, u_prev, v_prev, N);
+    r->polyPoints = {p1, p2, p3};
+    particleSystem->particles.emplace_back(r);
+    r->printPolyPointsGridIndices();
 }
 
-void init_system(){
+void init_system() {
     particleSystem = new ParticleSystem();
     // Initialize solvers
     solvers = {new ForwardEuler(), new Midpoint(), new RK4()};
-    init_rigid();
 }
 
 /*

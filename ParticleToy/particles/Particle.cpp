@@ -6,16 +6,13 @@ Particle::Particle(const Vec2f &ConstructPos, float m) :
     this->m_Mass = m;
 }
 
-Particle::~Particle(void) {
-}
-
 void Particle::reset() {
     m_Position = m_ConstructPos;
     m_Velocity = Vec2f(0.0, 0.0);
 }
 
 void Particle::draw() {
-    const float h = 0.001;
+    const float h = 0.01;
     glColor3f(1.f, 1.f, 1.f);
     glBegin(GL_QUADS);
     glVertex2f(m_Position[0] - h / 2.0f, m_Position[1] - h / 2.0f);
@@ -40,3 +37,5 @@ void Particle::drawVelocity(){
     glVertex2f(m_Position[0] + m_Velocity[0], m_Position[1] + m_Velocity[1]);
     glEnd();
 }
+
+Particle::~Particle() = default;

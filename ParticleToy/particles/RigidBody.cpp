@@ -3,6 +3,7 @@
 //
 
 #include <GL/gl.h>
+#include <Eigen/Geometry>
 #include "RigidBody.h"
 #include "../Macros.h"
 
@@ -23,6 +24,7 @@ using namespace std;
 RigidBody::RigidBody(float *mass, float *v, float *u_prev, float *v_prev, vector<Vec2f> &polyPoints, int N) : Particle(
         Vec2f(0, 0), 1), m_v(v), m_mass(mass), u_prev(u_prev), v_prev(v_prev), N(N), polyPoints(polyPoints) {
     R = Matrix2f::Zero(2, 2);
+    rasterizePolyEdges();
     calculateCenterOfMass();
 }
 
@@ -30,6 +32,7 @@ RigidBody::RigidBody(float *mass, float *v, float *u_prev, float *v_prev, int N)
                                                                                    m_mass(mass), u_prev(u_prev),
                                                                                    v_prev(v_prev), N(N) {
     R = Matrix2f::Zero(2, 2);
+    rasterizePolyEdges();
     calculateCenterOfMass();
 }
 
@@ -48,7 +51,7 @@ void RigidBody::calculateCenterOfMass() {
         pos(1) = j - 0.5f * 1 / N;
         massPositionSumation += mass * pos;
     }
-    m_Mass = totalMass;
+    m_Mass = totalMass + 1; // TODO mass must at least be > 0, therefore we add 1 here
     x = totalMass * massPositionSumation;
     m_Position[0] = x(0);
     m_Position[1] = x(1);
@@ -80,11 +83,42 @@ void RigidBody::calculateTorque() {
 }
 
 /**
- * See https://physics.stackexchange.com/questions/221078/angular-velocity-of-rigid-body
+ * See
+ * https://physics.stackexchange.com/questions/221078/angular-velocity-of-rigid-body
  * https://math.stackexchange.com/questions/1438191/how-to-find-the-tangential-and-normal-components-of-the-acceleration
+ * https://stackoverflow.com/questions/1243614/how-do-i-calculate-the-normal-vector-of-a-line-segment
+ * https://stackoverflow.com/questions/7469959/given-2-points-how-do-i-draw-a-line-at-a-right-angle-to-the-line-formed-by-the-t/7470098#7470098
  */
 void RigidBody::calculateAngularVelocity() {
-
+    int i, j;
+    float totalOmega = 0;
+    for (auto &polyCell : polyCells){
+        i = polyCell[0];
+        j = polyCell[1];
+        Vector2f velocity, velocityPerp, velocityTang, unit, r;
+        // Reverse elements of velocity vector
+        velocity[0] = unit[1] = u_prev[IX(i, j)];
+        velocity[1] = unit[0] = v_prev[IX(i, j)];
+        // Negate new x component
+        unit[0] *= -1;
+        // Reduce to unit size
+        unit.normalize();
+        // Calculate normal component of velocity: v_\perp = v.dot(n) * n
+        float dot = velocity[0] * unit[0] + velocity[1] * unit[1];
+        velocityPerp = dot * unit;
+        // Calculate tangential component: v_|| = v - v_perp
+        velocityTang = velocity - velocityPerp;
+        // Calculate angle between tangential component and velocity component
+        dot = velocityTang[0] * velocity[0] + velocityTang[1] * velocity[1];
+        float cosAngle = dot / ( velocity.norm() * unit.norm());
+        float sinAngle = sin(acos(cosAngle));
+        // Calculate angular velocity: \omega = (|v| * sin(θ)) / |r|
+        r[0] = i - 0.5f * 1 / N;
+        r[1] = j - 0.5f * 1 / N;
+        float omega = (velocity.norm() * sinAngle) / r.norm();
+        totalOmega += omega;
+    }
+    totalOmega /= polyCells.size();
 }
 
 /**

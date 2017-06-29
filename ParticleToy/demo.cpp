@@ -360,6 +360,7 @@ void init_rigid() {
     r->polyPoints = {p1, p2, p3};
     particleSystem->particles.emplace_back(r);
     r->printPolyPointsGridIndices();
+    r->calculateAuxiliaries();
 }
 
 void init_system() {

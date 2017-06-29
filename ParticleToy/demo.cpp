@@ -178,10 +178,10 @@ static void draw_density() {
             d10 = dens[IX(i + 1, j)];
             d11 = dens[IX(i + 1, j + 1)];
 
-//            glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
-//            glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
-//            glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
-//            glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
+            glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
+            glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
+            glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
+            glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
         }
     }
 

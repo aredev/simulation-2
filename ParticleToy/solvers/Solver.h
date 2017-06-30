@@ -16,13 +16,13 @@ class Solver {
 public:
     Solver();
 
-    unsigned int particleDims(ParticleSystem *p);
+    virtual unsigned int particleDims(ParticleSystem *p);
 
-    void particleGetState(ParticleSystem *p, vector<float> &dst);
+    virtual void particleGetState(ParticleSystem *p, vector<float> &dst);
 
-    void particleSetState(ParticleSystem *p, vector<float> &src);
+    virtual void particleSetState(ParticleSystem *p, vector<float> &src);
 
-    void particleDerivative(ParticleSystem *p, vector<float> &dst);
+    virtual void particleDerivative(ParticleSystem *p, vector<float> &dst);
 
     virtual void simulationStep(ParticleSystem *p, float dt) = 0;
 

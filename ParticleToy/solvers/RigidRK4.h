@@ -12,11 +12,14 @@ class RigidRK4 : public RK4 {
 public:
     int N;
 
-private:
-    // Functions
+    unsigned int particleDims(ParticleSystem *p) override;
 
+    void particleGetState(ParticleSystem *p, vector<float> &dst) override;
 
+    void particleSetState(ParticleSystem *p, vector<float> &src) override;
 
+    void particleDerivative(ParticleSystem *p, vector<float> &dst) override;
+    
 };
 
 

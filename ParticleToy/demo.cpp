@@ -354,10 +354,10 @@ void init_rigid() {
     p1 = Vec2f(center + Vec2f(-0.1f, 0.1f));
     p2 = Vec2f(center + Vec2f(-0.1f, -0.1f));
     p3 = Vec2f(center + Vec2f(0.1f, -0.1f));
-//    p4 = Vec2f(center + Vec2f(0.1f, 0.1f));
+//     p4 = Vec2f(center + Vec2f(0.1f, 0.1f));
+    vector<Vec2f> polyEdges = {p1, p2, p3};
 
-    RigidBody *r = new RigidBody(mass, v, u_prev, v_prev, N);
-    r->polyPoints = {p1, p2, p3};
+    RigidBody *r = new RigidBody(mass, v, u_prev, v_prev, polyEdges, N);
     particleSystem->particles.emplace_back(r);
     r->printPolyPointsGridIndices();
     r->calculateAuxiliaries();

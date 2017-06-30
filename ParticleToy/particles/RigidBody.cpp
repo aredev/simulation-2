@@ -22,9 +22,8 @@ using namespace std;
 
 
 RigidBody::RigidBody(float *mass, float *v, float *u_prev, float *v_prev, vector<Vec2f> &polyPoints, int N) : Particle(
-        Vec2f(0, 0), 1), m_v(v), m_mass(mass), u_prev(u_prev), v_prev(v_prev), N(N), polyPoints(polyPoints) {
+        Vec2f(0, 0), 1), m_v(v), m_mass(mass), u_prev(u_prev), v_prev(v_prev), N(N), polyEdges(polyPoints) {
     R = Matrix2f::Zero(2, 2);
-    rasterizePolyEdges();
     calculateCenterOfMass();
 }
 
@@ -32,29 +31,32 @@ RigidBody::RigidBody(float *mass, float *v, float *u_prev, float *v_prev, int N)
                                                                                    m_mass(mass), u_prev(u_prev),
                                                                                    v_prev(v_prev), N(N) {
     R = Matrix2f::Zero(2, 2);
-    rasterizePolyEdges();
     calculateCenterOfMass();
 }
 
 
+/**
+ * See https://en.wikipedia.org/wiki/Centroid, section "Centroid of a polygon"
+ * https://stackoverflow.com/questions/5271583/center-of-gravity-of-a-polygon
+ */
 void RigidBody::calculateCenterOfMass() {
     float totalMass = 0;
-    Vector2f massPositionSumation = Vector2f::Zero(2);
-    Vector2f pos;
-    int i, j;
-    for (auto &polyCell: polyCells) {
-        i = polyCell[0];
-        j = polyCell[1];
-        float mass = m_mass[IX(i, j)];
-        totalMass += mass;
-        pos(0) = i - 0.5f * 1 / N;
-        pos(1) = j - 0.5f * 1 / N;
-        massPositionSumation += mass * pos;
+    Vec2f e1, e2;
+    float cx, cy, A, tmp;
+    cx = cy = A = 0;
+    for (unsigned int i = 0; i < polyEdges.size(); i++) {
+        e1 = polyEdges.at(i);
+        e2 = polyEdges.at((i + 1) % polyEdges.size());
+        tmp = e1[0] * e2[1] - e2[0] * e1[1];
+        cx += (e1[0] + e2[0]) * tmp;
+        cy += (e1[1] + e2[1]) * tmp;
+        A += tmp;
+        totalMass += 1;
     }
-    m_Mass = totalMass + 1; // TODO mass must at least be > 0, therefore we add 1 here
-    x = totalMass * massPositionSumation;
-    m_Position[0] = x(0);
-    m_Position[1] = x(1);
+    m_Mass = totalMass;
+    A /= 2.0f;
+    m_Position[0] = 1.0f / (6 * A) * cx;
+    m_Position[1] = 1.0f / (6 * A) * cy;
 }
 
 /**
@@ -63,20 +65,28 @@ void RigidBody::calculateCenterOfMass() {
  * a rank-two tensor) called the inertia tensor, which we will describe momentarily
  */
 void RigidBody::calculateTorque() {
-    Vec2f totalTorque;
+    Vector2f totalTorque, m_Pos, r, force, rabs;;
+    m_Pos(0) = m_Position[0];
+    m_Pos(1) = m_Position[1];
     int i, j;
     for (auto &polyCell : polyCells) {
         i = polyCell[0];
         j = polyCell[1];
-        float mass = m_mass[IX(i, j)];
-        Vec2f r, force;
         r[0] = i - 0.5f * 1 / N;
         r[1] = j - 0.5f * 1 / N;
+        // Absolute position
+        rabs = r - m_Pos;
+        // Apply rotation matrix
+        r = R * rabs;
+        r += m_Pos;
         // u_prev is de kracht in de x-component van een cel
         // v_prev is de kracht in de y-component van een cel
         force[0] = u_prev[IX(i, j)];
         force[1] = v_prev[IX(i, j)];
-        totalTorque += (r - m_Position) * force;
+        Vector2f tmp = (r - m_Pos);
+        tmp(0) *= force(0);
+        tmp(1) *= force(1);
+        totalTorque += tmp;
     }
     torque(0) = totalTorque[0];
     torque(1) = totalTorque[1];
@@ -88,11 +98,13 @@ void RigidBody::calculateTorque() {
  * https://math.stackexchange.com/questions/1438191/how-to-find-the-tangential-and-normal-components-of-the-acceleration
  * https://stackoverflow.com/questions/1243614/how-do-i-calculate-the-normal-vector-of-a-line-segment
  * https://stackoverflow.com/questions/7469959/given-2-points-how-do-i-draw-a-line-at-a-right-angle-to-the-line-formed-by-the-t/7470098#7470098
+ *
+ * this might be it: https://scicomp.stackexchange.com/questions/11353/angular-velocity-by-vector-2d
  */
 void RigidBody::calculateAngularVelocity() {
     int i, j;
     float totalOmega = 0;
-    for (auto &polyCell : polyCells){
+    for (auto &polyCell : polyCells) {
         i = polyCell[0];
         j = polyCell[1];
         Vector2f velocity, velocityPerp, velocityTang, unit, r;
@@ -110,7 +122,7 @@ void RigidBody::calculateAngularVelocity() {
         velocityTang = velocity - velocityPerp;
         // Calculate angle between tangential component and velocity component
         dot = velocityTang[0] * velocity[0] + velocityTang[1] * velocity[1];
-        float cosAngle = dot / ( velocity.norm() * unit.norm());
+        float cosAngle = dot / (velocity.norm() * unit.norm());
         float sinAngle = sin(acos(cosAngle));
         // Calculate angular velocity: \omega = (|v| * sin(θ)) / |r|
         r[0] = i - 0.5f * 1 / N;
@@ -146,10 +158,10 @@ void RigidBody::calculateMomentumOfIntertia() {
     for (auto &polyCell: polyCells) {
         i = polyCell[0];
         j = polyCell[1];
-        float mi = m_mass[IX(i, j)];
+        float mi = m_mass[IX(i, j)] + 1;
         Vector2f pos;
-        pos(0) = i - 0.5f * 1 / N;
-        pos(1) = j - 0.5f * 1 / N;
+        pos(0) = i - 0.5f * 1 / N - m_Position[0];
+        pos(1) = j - 0.5f * 1 / N - m_Position[1];
         Ic += mi * (pos(0) * pos(0) + pos(1) * pos(1));
     }
     I = Ic;
@@ -161,10 +173,10 @@ void RigidBody::calculateMomentumOfIntertia() {
 void RigidBody::rasterizePolyEdges() {
     polyCells.clear();
     float h = 1.0f / N;
-    for (unsigned int i = 0; i < polyPoints.size(); i++) {
+    for (unsigned int i = 0; i < polyEdges.size(); i++) {
         Vec2f p1, p2;
-        p1 = polyPoints.at(i);
-        p2 = polyPoints.at((i + 1) % polyPoints.size());
+        p1 = polyEdges.at(i);
+        p2 = polyEdges.at((i + 1) % polyEdges.size());
         int i1, i2, j1, j2;
         i1 = p1[0] / h + 0.5f;
         j1 = p1[1] / h + 0.5f;
@@ -179,7 +191,7 @@ void RigidBody::rasterizePolyEdges() {
  */
 void RigidBody::printPolyPointsGridIndices() {
     float h = 1.0f / N;
-    for (auto &polyPoint: polyPoints) {
+    for (auto &polyPoint: polyEdges) {
         int i, j;
         i = polyPoint[0] / h + 0.5f;
         j = polyPoint[1] / h + 0.5f;
@@ -207,14 +219,11 @@ void RigidBody::BresenhamLineAlgorithm(float x1, float y1, float x2, float y2) {
         swap(x1, x2);
         swap(y1, y2);
     }
-
     const float dx = x2 - x1;
     const float dy = fabs(y2 - y1);
-
     float error = dx / 2.0f;
     const int ystep = (y1 < y2) ? 1 : -1;
     int y = (int) y1;
-
     const int maxX = (int) x2;
 
     for (int x = (int) x1; x < maxX; x++) {
@@ -239,7 +248,7 @@ void RigidBody::BresenhamLineAlgorithm(float x1, float y1, float x2, float y2) {
 void RigidBody::drawPolyPoints() {
     const float h = 0.01;
     glColor3f(1.f, 1.f, 1.f);
-    for (auto &polyPoint : polyPoints) {
+    for (auto &polyPoint : polyEdges) {
         glBegin(GL_QUADS);
         glVertex2f(polyPoint[0] - h / 2.0f, polyPoint[1] - h / 2.0f);
         glVertex2f(polyPoint[0] + h / 2.0f, polyPoint[1] - h / 2.0f);
@@ -256,6 +265,8 @@ void RigidBody::draw() {
     // Draw all the polygon points and edges
     drawPolyPoints();
     drawPolyEdges();
+    // Draw center of mass
+    Particle::draw();
 }
 
 /**
@@ -264,9 +275,9 @@ void RigidBody::draw() {
 void RigidBody::drawPolyEdges() {
     glColor3f(0.5f, 0.5f, 0.5f);
     Vec2f p1, p2;
-    for (unsigned int i = 0; i < polyPoints.size(); i++) {
-        p1 = polyPoints.at(i);
-        p2 = polyPoints.at((i + 1) % polyPoints.size());
+    for (unsigned int i = 0; i < polyEdges.size(); i++) {
+        p1 = polyEdges.at(i);
+        p2 = polyEdges.at((i + 1) % polyEdges.size());
         glBegin(GL_LINES);
         glVertex2f(p1[0], p1[1]);
         glVertex2f(p2[0], p2[1]);

@@ -8,6 +8,7 @@
 #include <vector>
 #include "Particle.h"
 #include "../forces/ConstraintForce.h"
+#include "RigidBody.h"
 
 class ParticleSystem {
 public:
@@ -16,6 +17,8 @@ public:
     void draw();
 
     std::vector<Particle *> particles;
+
+    std::vector<RigidBody *> rigidParticles;
 
     void clearForces();
 

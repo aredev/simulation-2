@@ -21,5 +21,4 @@ namespace utility {
     Vec2f getTransformedCoordinates(int x, int y);
 
     bool noCloseParticles(std::vector<Particle *> particles, Vec2f v, float threshold);
-
 }

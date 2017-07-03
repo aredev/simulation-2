@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(simulation_1)
+project(simulation_2)
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -15,58 +15,66 @@ set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_COVERAGE_COMPILE_FLAGS}" )
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${GCC_COVERAGE_LINK_FLAGS}")
 
 set(SOURCE_FILES
-        ParticleToy/CircularWireConstraint.cpp
-        ParticleToy/CircularWireConstraint.h
-        ParticleToy/linearSolver.cpp
-        ParticleToy/linearSolver.h
-        ParticleToy/Particle.cpp
-        ParticleToy/Particle.h
-        #ParticleToy/ParticleToy.cpp
-        ParticleToy/RodConstraint.cpp
-        ParticleToy/RodConstraint.h
-        ParticleToy/Solver.cpp
-        ParticleToy/SpringForce.cpp
-        ParticleToy/SpringForce.h
-        ParticleToy/Force.cpp
-        ParticleToy/Force.h
-        ParticleToy/GravityForce.cpp
-        ParticleToy/GravityForce.h
-        ParticleToy/ConstraintForce.cpp
-        ParticleToy/ConstraintForce.h
-        ParticleToy/ForwardEuler.cpp
-        ParticleToy/ForwardEuler.h
-        ParticleToy/RK4.cpp
-        ParticleToy/RK4.h
-        ParticleToy/Midpoint.cpp
-        ParticleToy/Midpoint.h
-        ParticleToy/LambdaSolver.cpp
-        ParticleToy/LambdaSolver.h
-        ParticleToy/SlidingWireConstraint.cpp
-        ParticleToy/SlidingWireConstraint.h
-        ParticleToy/HorizontalForce.cpp
-        ParticleToy/HorizontalForce.h
-        ParticleToy/WallForce.cpp
-        ParticleToy/WallForce.h
-        ParticleToy/AngularSpringForce.cpp
-        ParticleToy/AngularSpringForce.h
-        ParticleToy/SetUp.cpp
-        ParticleToy/SetUp.h
-        ParticleToy/Stam/solver.cpp ParticleToy/Stam/solver.h ParticleToy/Stam/demo.cpp ParticleToy/Stam/demo.h ParticleToy/Stam/Cell.cpp ParticleToy/Stam/Cell.h ParticleToy/Stam/Marker.cpp ParticleToy/Stam/Marker.h ParticleToy/SolidFluidForce.cpp ParticleToy/SolidFluidForce.h)
+        ParticleToy/constraints/CircularWireConstraint.cpp
+        ParticleToy/constraints/CircularWireConstraint.h
+        ParticleToy/particles/Particle.cpp
+        ParticleToy/particles/Particle.h
+        ParticleToy/particles/ParticleSystem.cpp
+        ParticleToy/particles/ParticleSystem.h
+        ParticleToy/constraints/RodConstraint.cpp
+        ParticleToy/constraints/RodConstraint.h
+        ParticleToy/forces/SpringForce.cpp
+        ParticleToy/forces/SpringForce.h
+        ParticleToy/forces/Force.cpp
+        ParticleToy/forces/Force.h
+        ParticleToy/forces/GravityForce.cpp
+        ParticleToy/forces/GravityForce.h
+        ParticleToy/constraints/ConstraintForce.cpp
+        ParticleToy/constraints/ConstraintForce.h
+        ParticleToy/solvers/ForwardEuler.cpp
+        ParticleToy/solvers/ForwardEuler.h
+        ParticleToy/solvers/RK4.cpp
+        ParticleToy/solvers/RK4.h
+        ParticleToy/solvers/RigidRK4.cpp
+        ParticleToy/solvers/RigidRK4.h
+        ParticleToy/solvers/Midpoint.cpp
+        ParticleToy/solvers/Midpoint.h
+        ParticleToy/constraints/LambdaSolver.cpp
+        ParticleToy/constraints/LambdaSolver.h
+        ParticleToy/constraints/SlidingWireConstraint.cpp
+        ParticleToy/constraints/SlidingWireConstraint.h
+        ParticleToy/forces/HorizontalForce.cpp
+        ParticleToy/forces/HorizontalForce.h
+        ParticleToy/forces/WallForce.cpp
+        ParticleToy/forces/WallForce.h
+        ParticleToy/forces/AngularSpringForce.cpp
+        ParticleToy/forces/AngularSpringForce.h
+        ParticleToy/demo/SetUp.cpp
+        ParticleToy/demo/SetUp.h
+        ParticleToy/Stam/solver.cpp
+        ParticleToy/Stam/solver.h
+        ParticleToy/demo.cpp
+        ParticleToy/particles/RigidBody.cpp
+        ParticleToy/particles/RigidBody.h
+        ParticleToy/Macros.h
+        ParticleToy/utility.cpp
+        ParticleToy/utility.h
+        ParticleToy/solvers/Solver.cpp
+        ParticleToy/solvers/Solver.h
+        ParticleToy/forces/MomentumForce.cpp
+        ParticleToy/forces/MomentumForce.h
+        ParticleToy/forces/BoundaryForce.cpp
+        ParticleToy/forces/BoundaryForce.h
+        ParticleToy/forces/SolidFluidForce.cpp
+        ParticleToy/forces/SolidFluidForce.h
+        )
 
 find_package (OpenGL REQUIRED)
-#find_package (GLUT REQUIRED)
 
 link_directories(ParticleToy/lib/freeglut ParticleToy/lib/lib_win64)
 
 include_directories(${OPENGL_INCLUDE_DIR} ParticleToy/include ParticleToy/include/Eigen/)
 
-add_executable(simulation_1 ${SOURCE_FILES})
+add_executable(simulation_2 ${SOURCE_FILES})
 
-target_link_libraries(simulation_1 ${OPENGL_LIBRARIES} freeglut_static glu32 opengl32 winmm gdi32)
-
-MESSAGE( STATUS "CMAKE_CURRENT_SOURCE_DIR: " ${CMAKE_CURRENT_SOURCE_DIR} )
-
-add_custom_command(TARGET simulation_1 POST_BUILD           # Adds a post-build event to simulation_1
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different       # which executes "cmake - E copy_if_different..."
-        ${CMAKE_CURRENT_SOURCE_DIR}/ParticleToy/lib/freeglut/bin/freeglut.dll         # <--this is in-file
-        $<TARGET_FILE_DIR:simulation_1>)                    # <--this is out-file path
+target_link_libraries(simulation_2 ${OPENGL_LIBRARIES} freeglut_static glu32 opengl32 winmm gdi32)

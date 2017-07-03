@@ -33,8 +33,10 @@ void ParticleSystem::draw() {
 }
 
 void ParticleSystem::drawParticles() {
-    int sz = particles.size();
     for (auto &particle: particles) {
+        particle->draw();
+    }
+    for (auto &particle: rigidParticles) {
         particle->draw();
     }
 }
@@ -51,7 +53,7 @@ void ParticleSystem::drawForces() {
     }
 }
 
-void ParticleSystem::drawVelocities(){
+void ParticleSystem::drawVelocities() {
     for (auto &particle: particles) {
         particle->drawVelocity();
     }

@@ -23,15 +23,17 @@ using namespace std;
 
 RigidBody::RigidBody(float *mass, float *v, float *u_prev, float *v_prev, vector<Vec2f> &polyPoints, int N) : Particle(
         Vec2f(0, 0), 1), m_v(v), m_mass(mass), u_prev(u_prev), v_prev(v_prev), N(N), polyEdges(polyPoints) {
-    R = Matrix2f::Zero(2, 2);
+    R = Matrix2f::Identity(2, 2);
     calculateCenterOfMass();
+    rasterizePolyEdges();
 }
 
 RigidBody::RigidBody(float *mass, float *v, float *u_prev, float *v_prev, int N) : Particle(Vec2f(0, 0), 1), m_v(v),
                                                                                    m_mass(mass), u_prev(u_prev),
                                                                                    v_prev(v_prev), N(N) {
-    R = Matrix2f::Zero(2, 2);
+    R = Matrix2f::Identity(2, 2);
     calculateCenterOfMass();
+    rasterizePolyEdges();
 }
 
 
@@ -69,7 +71,7 @@ void RigidBody::calculateTorque() {
     m_Pos(0) = m_Position[0];
     m_Pos(1) = m_Position[1];
     int i, j;
-    for (auto &polyCell : polyCells) {
+    for (auto &polyCell : polyEdgeCells) {
         i = polyCell[0];
         j = polyCell[1];
         r[0] = i - 0.5f * 1 / N;
@@ -104,33 +106,21 @@ void RigidBody::calculateTorque() {
 void RigidBody::calculateAngularVelocity() {
     int i, j;
     float totalOmega = 0;
-    for (auto &polyCell : polyCells) {
+    for (auto &polyCell : polyEdgeCells) {
         i = polyCell[0];
         j = polyCell[1];
-        Vector2f velocity, velocityPerp, velocityTang, unit, r;
-        // Reverse elements of velocity vector
-        velocity[0] = unit[1] = u_prev[IX(i, j)];
-        velocity[1] = unit[0] = v_prev[IX(i, j)];
-        // Negate new x component
-        unit[0] *= -1;
-        // Reduce to unit size
-        unit.normalize();
-        // Calculate normal component of velocity: v_\perp = v.dot(n) * n
-        float dot = velocity[0] * unit[0] + velocity[1] * unit[1];
-        velocityPerp = dot * unit;
-        // Calculate tangential component: v_|| = v - v_perp
-        velocityTang = velocity - velocityPerp;
-        // Calculate angle between tangential component and velocity component
-        dot = velocityTang[0] * velocity[0] + velocityTang[1] * velocity[1];
-        float cosAngle = dot / (velocity.norm() * unit.norm());
-        float sinAngle = sin(acos(cosAngle));
-        // Calculate angular velocity: \omega = (|v| * sin(θ)) / |r|
-        r[0] = i - 0.5f * 1 / N;
-        r[1] = j - 0.5f * 1 / N;
-        float omega = (velocity.norm() * sinAngle) / r.norm();
+        Vector2f v, r;
+
+        v[1] = u_prev[IX(i, j)];
+        v[0] = v_prev[IX(i, j)];
+
+        r[0] = i - 0.5f * 1 / N - m_Position[0];
+        r[1] = j - 0.5f * 1 / N - m_Position[1];
+
+        float omega = (r[0] * v[1] - r[1] * v[0]) / (r[0] * r[0] + r[1] * r[1]);
         totalOmega += omega;
     }
-    totalOmega /= polyCells.size();
+    omega = totalOmega / polyEdgeCells.size();
 }
 
 /**
@@ -155,7 +145,7 @@ void getR() {
 void RigidBody::calculateMomentumOfIntertia() {
     int i, j;
     float Ic = 0;
-    for (auto &polyCell: polyCells) {
+    for (auto &polyCell: polyEdgeCells) {
         i = polyCell[0];
         j = polyCell[1];
         float mi = m_mass[IX(i, j)] + 1;
@@ -171,7 +161,7 @@ void RigidBody::calculateMomentumOfIntertia() {
  * Determine the cells that should be selected for all of the edges of the polygon
  */
 void RigidBody::rasterizePolyEdges() {
-    polyCells.clear();
+    polyEdgeCells.clear();
     float h = 1.0f / N;
     for (unsigned int i = 0; i < polyEdges.size(); i++) {
         Vec2f p1, p2;
@@ -233,7 +223,7 @@ void RigidBody::BresenhamLineAlgorithm(float x1, float y1, float x2, float y2) {
         } else {
             polyCell = Vec2f(x, y);
         }
-        polyCells.emplace_back(polyCell);
+        polyEdgeCells.emplace_back(polyCell);
         error -= dy;
         if (error < 0) {
             y += ystep;
@@ -291,5 +281,5 @@ void RigidBody::drawPolyEdges() {
  */
 void RigidBody::calculateVelocity() {
     Vec2f P = m_Mass * m_Velocity;
-    Vec2f v = P / m_Mass;
+    m_Velocity = P / m_Mass;
 }

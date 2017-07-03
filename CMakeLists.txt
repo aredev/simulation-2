@@ -54,8 +54,6 @@ set(SOURCE_FILES
         ParticleToy/Stam/solver.cpp
         ParticleToy/Stam/solver.h
         ParticleToy/demo.cpp
-        ParticleToy/Marker.cpp
-        ParticleToy/Marker.h
         ParticleToy/particles/RigidBody.cpp
         ParticleToy/particles/RigidBody.h
         ParticleToy/Macros.h
@@ -65,6 +63,10 @@ set(SOURCE_FILES
         ParticleToy/solvers/Solver.h
         ParticleToy/forces/MomentumForce.cpp
         ParticleToy/forces/MomentumForce.h
+        ParticleToy/forces/BoundaryForce.cpp
+        ParticleToy/forces/BoundaryForce.h
+        ParticleToy/forces/SolidFluidForce.cpp
+        ParticleToy/forces/SolidFluidForce.h
         )
 
 find_package (OpenGL REQUIRED)

@@ -9,7 +9,7 @@
 #include "../forces/ConstraintForce.h"
 #include "Solver.h"
 
-class Midpoint : public Solver{
+class Midpoint : public Solver {
 public:
     void simulationStep(ParticleSystem *p, float dt) override;
 };

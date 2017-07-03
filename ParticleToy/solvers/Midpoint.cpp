@@ -1,9 +1,6 @@
 #include <vector>
-#include "../particles/Particle.h"
-#include "../forces/Force.h"
 #include "../forces/ConstraintForce.h"
 #include "Midpoint.h"
-#include "../constraints/LambdaSolver.h"
 
 void Midpoint::simulationStep(ParticleSystem *p, float dt) {
     unsigned int particleDimension = this->particleDims(p);

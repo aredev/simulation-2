@@ -11,7 +11,7 @@
 
 #endif //SIMULATION_1_FORWARDEULER_H
 
-class ForwardEuler : public Solver{
+class ForwardEuler : public Solver {
 public:
     void simulationStep(ParticleSystem *p, float dt) override;
 

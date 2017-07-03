@@ -3,7 +3,6 @@
 //
 
 #include "RigidRK4.h"
-#include "../Macros.h"
 
 using namespace Eigen;
 
@@ -39,8 +38,6 @@ void RigidRK4::particleSetState(ParticleSystem *p, vector<float> &src) {
         p->rigidParticles[i]->P(1) = src[i * 10 + 7];
         p->rigidParticles[i]->L(0) = src[i * 10 + 8];
         p->rigidParticles[i]->L(1) = src[i * 10 + 9];
-
-
     }
 }
 
@@ -56,10 +53,11 @@ void RigidRK4::particleDerivative(ParticleSystem *p, vector<float> &dst) {
         dst[i * 10] = p->rigidParticles[i]->m_Velocity[0];
         dst[i * 10 + 1] = p->rigidParticles[i]->m_Velocity[1];
         /* Rdot = omega * R */
-        dst[i * 10 + 2] = p->rigidParticles[i]->R(0, 0) * p->rigidParticles[i]->omega;
-        dst[i * 10 + 3] = p->rigidParticles[i]->R(0, 1) * p->rigidParticles[i]->omega;
-        dst[i * 10 + 4] = p->rigidParticles[i]->R(1, 0) * p->rigidParticles[i]->omega;
-        dst[i * 10 + 5] = p->rigidParticles[i]->R(1, 1) * p->rigidParticles[i]->omega;
+        Matrix2f Rdot = p->rigidParticles[i]->omega * p->rigidParticles[i]->R;
+        dst[i * 10 + 2] = Rdot(0, 0);
+        dst[i * 10 + 3] = Rdot(0, 1);
+        dst[i * 10 + 4] = Rdot(1, 0);
+        dst[i * 10 + 5] = Rdot(1, 1);
         /* Pdot = F */
         dst[i * 10 + 6] = p->rigidParticles[i]->m_Force[0];
         dst[i * 10 + 7] = p->rigidParticles[i]->m_Force[1];

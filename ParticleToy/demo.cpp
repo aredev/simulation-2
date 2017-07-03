@@ -21,8 +21,8 @@
 #include "particles/Particle.h"
 #include "forces/Force.h"
 #include "constraints/ConstraintForce.h"
-#include "Marker.h"
 #include "particles/RigidBody.h"
+#include "utility.h"
 
 /* macros */
 
@@ -31,16 +31,21 @@
 #include "solvers/RK4.h"
 #include "solvers/Midpoint.h"
 #include "solvers/ForwardEuler.h"
-#include "forces/GravityForce.h"
+#include "solvers/RigidRK4.h"
+#include "forces/SolidFluidForce.h"
+#include "forces/BoundaryForce.h"
 
 
 using namespace Eigen;
+using namespace utility;
 
 /* external definitions (from solver.c) */
 
-extern void dens_step(int N, float *x, float *x0, float *u, float *v, float diff, float dt);
+extern void dens_step(int N, float *x, float *x0, float *u, float *v, float diff, float dt, ParticleSystem &p);
 
-extern void vel_step(int N, float *u, float *v, float *u0, float *v0, float visc, float dt);
+extern void vel_step(int N, float *u, float *v, float *u0, float *v0, float visc, float dt, ParticleSystem &p);
+
+extern void vorticity_confinement(float *u, float *v, int N, float dt);
 
 //static void transform_to_markers();
 
@@ -55,6 +60,10 @@ static int dvel;
 
 static float *u, *v, *u_prev, *v_prev;
 static float *dens, *dens_prev, *mass;
+static bool *b; //boundary
+static bool withBool = false;
+static bool particleDraggable = false;
+static std::vector<Vec2f> boundaries;
 
 static int win_id;
 static int win_x, win_y;
@@ -62,9 +71,9 @@ static int mouse_down[3];
 static int omx, omy, mx, my;
 
 static ParticleSystem *particleSystem;
-std::vector<Marker *> markers;
 
 std::vector<Solver *> solvers;
+std::vector<Solver *> rigidSolvers;
 
 
 /*
@@ -160,6 +169,36 @@ static void draw_velocity() {
     glEnd();
 }
 
+static void draw_boundary(void) {
+    glColor3f(0.5f, 0.5, 0.5f);
+
+    glBegin(GL_QUADS);
+
+    float x, y, h, d00, d01, d10, d11;
+    h = 1.0f / N;
+
+    for (int i = 0; i < N; ++i) {
+        x = (i - 0.5f) * h;
+        for (int j = 0; j < N; ++j) {
+            y = (j - 0.5f) * h;
+            if (b[IX(i, j)]) {
+
+                d00 = b[IX(i, j)];
+                d01 = b[IX(i, j + 1)];
+                d10 = b[IX(i + 1, j)];
+                d11 = b[IX(i + 1, j + 1)];
+
+                glVertex2f(x, y);
+                glVertex2f(x + h, y);
+                glVertex2f(x + h, y + h);
+                glVertex2f(x, y + h);
+            }
+        }
+    }
+
+    glEnd();
+}
+
 static void draw_density() {
     int i, j;
     float x, y, h, d00, d01, d10, d11;
@@ -178,10 +217,14 @@ static void draw_density() {
             d10 = dens[IX(i + 1, j)];
             d11 = dens[IX(i + 1, j + 1)];
 
-            glColor3f ( d00, d00, d00 ); glVertex2f ( x, y );
-            glColor3f ( d10, d10, d10 ); glVertex2f ( x+h, y );
-            glColor3f ( d11, d11, d11 ); glVertex2f ( x+h, y+h );
-            glColor3f ( d01, d01, d01 ); glVertex2f ( x, y+h );
+            glColor3f(d00, d00, d00);
+            glVertex2f(x, y);
+            glColor3f(d10, d10, d10);
+            glVertex2f(x + h, y);
+            glColor3f(d11, d11, d11);
+            glVertex2f(x + h, y + h);
+            glColor3f(d01, d01, d01);
+            glVertex2f(x, y + h);
         }
     }
 
@@ -231,11 +274,20 @@ static void get_from_UI(float *d, float *u, float *v) {
 
 static void key_func(unsigned char key, int x, int y) {
     switch (key) {
+        case 'b':
+        case 'B':
+            withBool = !withBool;
+            printf("Boundary mode %d\n", withBool);
+            break;
         case 'c':
         case 'C':
             clear_data();
             break;
-
+        case 'd':
+        case 'D':
+            particleDraggable = !particleDraggable;
+            printf("Particle draggable %d \n", particleDraggable);
+            break;
         case 'q':
         case 'Q':
             free_data();
@@ -259,6 +311,18 @@ static void mouse_func(int button, int state, int x, int y) {
 static void motion_func(int x, int y) {
     mx = x;
     my = y;
+
+    if (particleDraggable) {
+        Vec2f normalizedMouse = getTransformedCoordinates(x, y);
+        Particle *p = findParticleAt(normalizedMouse[0], normalizedMouse[1], particleSystem->particles);
+        p->m_Position = normalizedMouse;
+        p->setColour(0.5f);
+    }
+
+    if (withBool) {
+        boundaries.push_back(getTransformedCoordinates(x, y));
+    }
+
 }
 
 static void reshape_func(int width, int height) {
@@ -269,39 +333,24 @@ static void reshape_func(int width, int height) {
     win_y = height;
 }
 
-static void idle_func(void) {
+static void idle_func() {
     get_from_UI(dens_prev, u_prev, v_prev);
-    vel_step(N, u, v, u_prev, v_prev, visc, dt);
-    dens_step(N, dens, dens_prev, u, v, diff, dt);
+    //compute vorticity confinement
+    vorticity_confinement(u, v, N, 1.0f / N);
+
+    vel_step(N, u, v, u_prev, v_prev, visc, dt, *particleSystem);
+    dens_step(N, dens, dens_prev, u, v, diff, dt, *particleSystem);
+
     // Simulation step
-    solvers[2]->simulationStep(particleSystem, dt);
+//    solvers[2]->simulationStep(particleSystem, dt);
+    rigidSolvers[0]->simulationStep(particleSystem, dt);
+
     glutSetWindow(win_id);
     glutPostRedisplay();
 }
 
-//static void transform_to_markers() {
-//    particleSystem->particles.clear();
-//    int i, j;
-//    float x, y, h, d00, d01, d10, d11;
-//
-//    h = 1.0f / N;
-//
-//    for (i = 0; i <= N; i++) {
-//        x = (i - 0.5f) * h;
-//        for (j = 0; j <= N; j++) {
-//            y = (j - 0.5f) * h;
-//
-//            d00 = dens[IX(i, j)];
-//            if (d00 > 0) {
-//                particleSystem->particles.push_back(new Marker(Vec2f(x, y), 1.0f, d00, 0));
-//            }
-//        }
-//    }
-//
-//    particleSystem->forces.push_back(new GravityForce(particleSystem->particles));
-//}
 
-static void display_func(void) {
+static void display_func() {
     pre_display();
 
     if (dvel) draw_velocity();
@@ -317,7 +366,7 @@ static void display_func(void) {
   ----------------------------------------------------------------------
 */
 
-static void open_glut_window(void) {
+static void open_glut_window() {
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 
     glutInitWindowPosition(0, 0);
@@ -354,11 +403,14 @@ void init_rigid() {
     p1 = Vec2f(center + Vec2f(-0.1f, 0.1f));
     p2 = Vec2f(center + Vec2f(-0.1f, -0.1f));
     p3 = Vec2f(center + Vec2f(0.1f, -0.1f));
-//     p4 = Vec2f(center + Vec2f(0.1f, 0.1f));
-    vector<Vec2f> polyEdges = {p1, p2, p3};
+    p4 = Vec2f(center + Vec2f(0.1f, 0.1f));
+    vector<Vec2f> polyEdges = {p1, p2, p3, p4};
 
     RigidBody *r = new RigidBody(mass, v, u_prev, v_prev, polyEdges, N);
-    particleSystem->particles.emplace_back(r);
+    particleSystem->rigidParticles.emplace_back(r);
+    particleSystem->forces.push_back(
+            new SolidFluidForce(particleSystem->rigidParticles, u, v, u_prev, v_prev, dens, N));
+    particleSystem->forces.push_back(new BoundaryForce(particleSystem->rigidParticles, u, v, dens, N));
     r->printPolyPointsGridIndices();
     r->calculateAuxiliaries();
 }
@@ -367,6 +419,7 @@ void init_system() {
     particleSystem = new ParticleSystem();
     // Initialize solvers
     solvers = {new ForwardEuler(), new Midpoint(), new RK4()};
+    rigidSolvers = {new RigidRK4};
 }
 
 /*

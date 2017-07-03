@@ -34,14 +34,13 @@ public:
     This vector contains the positions, which transformed to the index of the grid, indicating which cells
     the convex hull of the rigid body covers.
     */
-    vector<Vec2f> polyCells;
+    vector<Vec2f> polyEdgeCells;
 
 
     int N;
 
     /* State variables */
     Vector2f x;
-    Vector2f Rdot; /* R.t */
     Matrix2f R;
     Vector2f P, /* P.t/ */
             L;  /* L.t/ */

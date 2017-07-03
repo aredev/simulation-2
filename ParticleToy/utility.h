@@ -7,7 +7,7 @@
 
 #endif //SIMULATION_1_UTILITY_H
 
-#include <Eigen/StdVector>
+#include <vector>
 #include "particles/Particle.h"
 
 namespace utility {
@@ -21,4 +21,6 @@ namespace utility {
     Vec2f getTransformedCoordinates(int x, int y);
 
     bool noCloseParticles(std::vector<Particle *> particles, Vec2f v, float threshold);
+
+    Particle *findParticleAt(float x, float y, std::vector<Particle *> &particles);
 }

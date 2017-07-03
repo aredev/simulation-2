@@ -85,5 +85,13 @@ namespace utility {
         return true;
     }
 
+    Particle *findParticleAt(float x, float y, vector<Particle *> &particles) {
+        for (auto &particle : particles) {
+            if (isWithinProximity(Vec2f(x, y), particle->m_Position, 0.15f)) {
+                return particle;
+            }
+        }
+    }
+
 }
 

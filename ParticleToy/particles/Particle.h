@@ -19,8 +19,11 @@ public:
     Vec2f m_Velocity;
     Vec2f m_Force;
     float m_Mass;
+    float m_Colour;
 
     void drawForce();
 
     void drawVelocity();
+
+    void setColour(float c);
 };

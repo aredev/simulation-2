@@ -19,7 +19,7 @@ public:
     void particleSetState(ParticleSystem *p, vector<float> &src) override;
 
     void particleDerivative(ParticleSystem *p, vector<float> &dst) override;
-    
+
 };
 
 
